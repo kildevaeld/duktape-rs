@@ -11,7 +11,6 @@ use duktape::*;
 
 fn main() -> Result<()> {
 
-
     let mut ctx = Context::new();
 
     ctx.push_global_object();
