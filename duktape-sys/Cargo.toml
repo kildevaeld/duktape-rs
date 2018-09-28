@@ -1,0 +1,14 @@
+[package]
+name = "duktape-sys"
+version = "0.1.0"
+authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
+edition = "2018"
+build = "build.rs"
+
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+bindgen = { version = "0.23", optional = false }
+gcc = "0.3"

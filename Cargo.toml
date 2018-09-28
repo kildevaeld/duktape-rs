@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "duktape-sys",
+    "duktape",
+    "duk"
+]

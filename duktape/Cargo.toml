@@ -1,0 +1,9 @@
+[package]
+name = "duktape"
+version = "0.1.0"
+authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+duktape-sys = { path = "../duktape-sys" }
+error-chain = "0.12.0"
