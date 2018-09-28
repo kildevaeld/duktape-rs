@@ -32,6 +32,8 @@ fn main() -> Result<()> {
     let greeting: String = ctx.getp();
 
     assert_eq(&greeting, "Hello me");
+
+    Ok(())
 }
 
 
