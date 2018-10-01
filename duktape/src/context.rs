@@ -59,7 +59,7 @@ impl Context {
     }
 
     /// Evaluate a script
-    pub fn eval<T: AsRef<[u8]>>(&mut self, script: T) -> Result<()> {
+    pub fn eval<T: AsRef<[u8]>>(&self, script: T) -> Result<()> {
         let script = script.as_ref();
 
         let ret = unsafe {
@@ -102,52 +102,52 @@ impl Context {
         T::from_context(self, index)
     }
 
-    pub fn getp<T: Deserialize>(&mut self) -> Result<T> {
+    pub fn getp<T: Deserialize>(&self) -> Result<T> {
         let result = self.get::<T>(-1)?;
         self.pop(1);
         Ok(result)
     }
 
     /// Push a value to the stack
-    pub fn push<T: Serialize>(&mut self, value: T) -> &mut Self {
+    pub fn push<T: Serialize>(&self, value: T) -> &Self {
         value.to_context(self).unwrap();
         self
     }
 
-    pub fn push_object(&mut self) -> &mut Self {
+    pub fn push_object(&self) -> &Self {
         unsafe {
             duk::duk_push_object(self.inner);
         }
         self
     }
 
-    pub fn push_bare_object(&mut self) -> &mut Self {
+    pub fn push_bare_object(&self) -> &Self {
         unsafe {
             duk::duk_push_bare_object(self.inner);
         }
         self
     }
 
-    pub fn push_global_object(&mut self) -> &mut Self {
+    pub fn push_global_object(&self) -> &Self {
         unsafe {
             duk::duk_push_global_object(self.inner);
         }
         self
     }
 
-    pub fn push_global_stash(&mut self) -> &mut Self {
+    pub fn push_global_stash(&self) -> &Self {
         unsafe {
             duk::duk_push_global_stash(self.inner);
         }
         self
     }
 
-    pub fn dup(&mut self, idx: Idx) -> &mut Self {
+    pub fn dup(&self, idx: Idx) -> &Self {
         unsafe { duk::duk_dup(self.inner, idx) };
         self
     }
 
-    pub fn pop(&mut self, mut index: Idx) -> &mut Self {
+    pub fn pop(&self, mut index: Idx) -> &Self {
         let top = self.top();
         if index > top {
             index = top;
@@ -162,7 +162,7 @@ impl Context {
         self
     }
 
-    pub fn remove(&mut self, idx: Idx) -> &mut Self {
+    pub fn remove(&self, idx: Idx) -> &Self {
         unsafe { duk::duk_remove(self.inner, idx) };
         self
     }
@@ -183,7 +183,7 @@ impl Context {
     /// Properties
 
     ///
-    pub fn put_prop_string<T: AsRef<[u8]>>(&mut self, index: i32, name: T) -> &mut Self {
+    pub fn put_prop_string<T: AsRef<[u8]>>(&self, index: i32, name: T) -> &Self {
         unsafe {
             duk::duk_put_prop_lstring(
                 self.inner,
@@ -207,7 +207,7 @@ impl Context {
         self
     }
 
-    pub fn del_prop_string<T: AsRef<[u8]>>(&mut self, index: i32, name: T) -> &mut Self {
+    pub fn del_prop_string<T: AsRef<[u8]>>(&self, index: i32, name: T) -> &Self {
         unsafe {
             duk::duk_del_prop_lstring(
                 self.inner,
@@ -330,17 +330,17 @@ impl Context {
         }
     }
 
-    pub fn call(&mut self, args: i32) -> Result<()> {
+    pub fn call(&self, args: i32) -> Result<()> {
         unsafe { duk::duk_pcall(self.inner, args) };
         Ok(())
     }
 
-    pub fn call_method(&mut self, args: i32) -> Result<()> {
+    pub fn call_method(&self, args: i32) -> Result<()> {
         unsafe { duk::duk_pcall_method(self.inner, args) };
         Ok(())
     }
 
-    pub fn call_prop(&mut self, idx: Idx, args: i32) -> Result<()> {
+    pub fn call_prop(&self, idx: Idx, args: i32) -> Result<()> {
         unsafe { duk::duk_pcall_prop(self.inner, idx, args) };
         Ok(())
     }

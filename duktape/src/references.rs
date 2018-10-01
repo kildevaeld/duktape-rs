@@ -7,30 +7,30 @@ use std::ops::Index;
 
 pub trait ArgumentList {
     fn len(&self) -> i32;
-    fn push(&self, ctx: &mut Context);
+    fn push(&self, ctx: &Context);
 }
 
 impl<T1: Serialize> ArgumentList for (T1) {
     fn len(&self) -> i32 {
         1
     }
-    fn push(&self, ctx: &mut Context) {}
+    fn push(&self, ctx: &Context) {}
 }
 
 impl ArgumentList for () {
     fn len(&self) -> i32 {
         0
     }
-    fn push(&self, ctx: &mut Context) {}
+    fn push(&self, ctx: &Context) {}
 }
 
 pub struct Reference<'a> {
-    pub(crate) ctx: &'a mut Context,
+    pub(crate) ctx: &'a Context,
     refer: u32,
 }
 
 impl<'a> Reference<'a> {
-    pub fn new(ctx: &'a mut Context, idx: Idx) -> Reference<'a> {
+    pub fn new(ctx: &'a Context, idx: Idx) -> Reference<'a> {
         unsafe { duk::duk_dup(ctx.inner, idx) };
         let refer = unsafe { make_ref(ctx.inner) };
         Reference { ctx, refer }
@@ -72,11 +72,17 @@ impl<'a> Reference<'a> {
 }
 
 impl<'a> Serialize for Reference<'a> {
-    fn to_context(self, ctx: &mut Context) -> Result<()> {
+    fn to_context(self, ctx: &Context) -> Result<()> {
         unsafe { push_ref(ctx.inner, self.refer) };
         Ok(())
     }
 }
+
+// impl<'a> Deserialize for Reference<'a> {
+//     fn from_context(ctx: &Context, index: i32) -> Result<Self> {
+//         Ok(Reference::new(ctx, -1))
+//     }
+// }
 
 // impl<'a> Clone for Reference<'a> {
 //     fn clone(&self) -> Reference<'a> {

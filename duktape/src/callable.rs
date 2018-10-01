@@ -59,7 +59,7 @@ unsafe extern "C" fn dtor(ctx: *mut duk_context) -> duk_ret_t {
 }
 
 impl Serialize for Box<dyn Callable> {
-    fn to_context(self, context: &mut Context) -> Result<()> {
+    fn to_context(self, context: &Context) -> Result<()> {
         unsafe {
             duk_push_c_function(context.inner, Some(call), self.argc());
             let m = Box::new(self);

@@ -4,7 +4,7 @@ use duktape_sys;
 use std::ffi::{CStr, CString};
 
 pub trait Serialize {
-    fn to_context(self, ctx: &mut Context) -> Result<()>;
+    fn to_context(self, ctx: &Context) -> Result<()>;
 }
 
 pub trait Deserialize: Sized {
@@ -14,7 +14,7 @@ pub trait Deserialize: Sized {
 macro_rules! impl_for_ser {
     ($T:ty, $U:ty, $func:ident) => {
         impl Serialize for $T {
-            fn to_context(self, context: &mut Context) -> Result<()> {
+            fn to_context(self, context: &Context) -> Result<()> {
                 unsafe { duktape_sys::$func(context.inner, self as $U) };
                 Ok(())
             }
@@ -77,7 +77,7 @@ impl Deserialize for bool {
 }
 
 impl Serialize for String {
-    fn to_context(self, context: &mut Context) -> Result<()> {
+    fn to_context(self, context: &Context) -> Result<()> {
         let len = self.len();
         let data = CString::new(self.as_bytes()).unwrap();
         let ptr = data.as_ptr();
@@ -89,7 +89,7 @@ impl Serialize for String {
 }
 
 impl<'a> Serialize for &'a String {
-    fn to_context(self, context: &mut Context) -> Result<()> {
+    fn to_context(self, context: &Context) -> Result<()> {
         let data = self.as_ptr() as *const i8;
         unsafe {
             duktape_sys::duk_push_string(context.inner, data);
@@ -99,7 +99,7 @@ impl<'a> Serialize for &'a String {
 }
 
 impl<'a> Serialize for &'a str {
-    fn to_context(self, context: &mut Context) -> Result<()> {
+    fn to_context(self, context: &Context) -> Result<()> {
         let len = self.len();
         let data = self.as_ptr() as *const i8;
         unsafe {

@@ -59,7 +59,7 @@ unsafe extern "C" fn class_ctor(ctx: *mut duk::duk_context) -> duk::duk_ret_t {
 }
 
 impl Serialize for ClassBuilder {
-    fn to_context(self, ctx: &mut Context) -> Result<()> {
+    fn to_context(self, ctx: &Context) -> Result<()> {
         if let Some(ctor) = self.constructor {
             ctx.push(ctor);
         } else {

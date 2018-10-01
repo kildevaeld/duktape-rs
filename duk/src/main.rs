@@ -78,22 +78,20 @@ fn main() -> duktape::error::Result<()> {
 
     ctx.eval(data)?;
     ctx.pop(1).push_object();
-    {
-        let r = duktape::Reference::new(&mut ctx, -1);
-        let mut f = r.into_object();
-        f.set("test", "Hello, World");
-        f.set(
-            "rapper",
-            duktape::cb(
-                1,
-                Box::new(|ctx| {
-                    println!("Hello {}", ctx.get::<String>(0)?);
-                    Ok(0)
-                }),
-            ),
-        );
-        f.call("fn_name: T", ("Hello"))?;
-    }
+    let r = duktape::Reference::new(&mut ctx, -1);
+    let mut f = r.into_object();
+    f.set("test", "Hello, World");
+    f.set(
+        "rapper",
+        duktape::cb(
+            1,
+            Box::new(|ctx| {
+                println!("Hello {}", ctx.get::<String>(0)?);
+                Ok(0)
+            }),
+        ),
+    );
+    f.call("fn_name: T", ("Hello"))?;
     //ctx.pop(1);
     //println!("{}", ctx.dump());
 
