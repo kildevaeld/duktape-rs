@@ -1,9 +1,11 @@
 [package]
-name = "duk"
+name = "duktape-cjs"
 version = "0.1.0"
 authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
 
 [dependencies]
 duktape = { path = "../duktape" }
-duktape-cjs = { path = "../duktape-cjs" }
+error-chain = "0.12.0"
+lazy_static = "1.1.0"
+regex = "1"

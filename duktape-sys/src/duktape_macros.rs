@@ -209,7 +209,7 @@ pub unsafe fn duk_peval_lstring(
         ctx,
         buf,
         len,
-        0 | DUK_COMPILE_EVAL | DUK_COMPILE_NOSOURCE | DUK_COMPILE_NOFILENAME,
+        0 | DUK_COMPILE_SAFE | DUK_COMPILE_EVAL | DUK_COMPILE_NOSOURCE | DUK_COMPILE_NOFILENAME,
     )
 }
 
@@ -223,7 +223,11 @@ pub unsafe fn duk_peval_lstring_noresult(
         ctx,
         buf,
         len,
-        0 | DUK_COMPILE_EVAL | DUK_COMPILE_NOSOURCE | DUK_COMPILE_NORESULT | DUK_COMPILE_NOFILENAME,
+        0 | DUK_COMPILE_SAFE
+            | DUK_COMPILE_EVAL
+            | DUK_COMPILE_NOSOURCE
+            | DUK_COMPILE_NORESULT
+            | DUK_COMPILE_NOFILENAME,
     )
 }
 

@@ -3,5 +3,6 @@
 members = [
     "duktape-sys",
     "duktape",
+    "duktape-cjs",
     "duk"
 ]

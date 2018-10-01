@@ -1,1 +1,1 @@
-pub enum Value {}
+pub enum ValueKind {}

@@ -1,5 +1,8 @@
 use super::encoding::{Deserialize, Serialize};
-use super::error::Result;
+use super::error::{ErrorKind, Result};
+use super::internal;
+use super::references;
+
 use duktape_sys::{self as duk, duk_context};
 use std::ffi::CStr;
 use std::ptr;
@@ -9,26 +12,54 @@ pub struct Context {
     managed: bool,
 }
 
+pub type Idx = i32;
+
+#[derive(PartialEq)]
+pub enum Type {
+    Undefined,
+    Null,
+    String,
+    Boolean,
+    Number,
+    Object,
+    Array,
+    Function,
+}
+
 impl Context {
-    pub fn new() -> Option<Context> {
+    /// Create a new context
+    /// Will return an error, if a duk heap couldn't be created
+    /// The context manage the lifetime of the wrapped duktape context
+    pub fn new() -> Result<Context> {
         let d = unsafe { duk::duk_create_heap_default() };
         if d.is_null() {
-            return None;
+            return Err(ErrorKind::InsufficientMemory.into());
         }
-        Some(Context {
+
+        unsafe { internal::init_refs(d) };
+
+        Ok(Context {
             inner: d,
             managed: true,
         })
     }
 
+    /// Create a new context, from a given duktape context
+    /// The duktape context will **not** be managed.
     pub fn with(duk: *mut duk_context) -> Context {
+        unsafe { internal::init_refs(duk) };
         Context {
             inner: duk,
             managed: false,
         }
     }
 
-    pub fn eval<T: AsRef<str>>(&mut self, script: T) -> Result<()> {
+    pub fn ptr(&self) -> *mut duk_context {
+        self.inner
+    }
+
+    /// Evaluate a script
+    pub fn eval<T: AsRef<[u8]>>(&mut self, script: T) -> Result<()> {
         let script = script.as_ref();
 
         let ret = unsafe {
@@ -36,7 +67,22 @@ impl Context {
         };
 
         if ret != duk::DUK_EXEC_SUCCESS as i32 {
-            println!("{}", self.dump());
+            if self.has_prop_string(-1, "stack") {
+                self.get_prop_string(-1, "stack");
+            } else {
+                self.get_prop_string(-1, "message");
+            }
+
+            let msg: String;
+            if self.is_string(-1) {
+                msg = self.getp()?;
+            } else {
+                msg = "Uknown".to_string();
+                self.pop(1);
+            }
+            self.pop(1);
+
+            return Err(ErrorKind::TypeError(msg).into());
         }
 
         Ok(())
@@ -52,8 +98,8 @@ impl Context {
         }
     }
 
-    pub fn get<T: Deserialize>(&self, index: i32) -> Result<T> {
-        T::get(self, index)
+    pub fn get<T: Deserialize>(&self, index: Idx) -> Result<T> {
+        T::from_context(self, index)
     }
 
     pub fn getp<T: Deserialize>(&mut self) -> Result<T> {
@@ -62,41 +108,82 @@ impl Context {
         Ok(result)
     }
 
-    pub fn push<T: Serialize>(&mut self, value: T) -> Result<()> {
-        value.push(self)?;
-        Ok(())
+    /// Push a value to the stack
+    pub fn push<T: Serialize>(&mut self, value: T) -> &mut Self {
+        value.to_context(self).unwrap();
+        self
     }
 
-    pub fn push_object(&mut self) {
+    pub fn push_object(&mut self) -> &mut Self {
         unsafe {
             duk::duk_push_object(self.inner);
         }
+        self
     }
 
-    pub fn push_global_object(&mut self) {
+    pub fn push_bare_object(&mut self) -> &mut Self {
+        unsafe {
+            duk::duk_push_bare_object(self.inner);
+        }
+        self
+    }
+
+    pub fn push_global_object(&mut self) -> &mut Self {
         unsafe {
             duk::duk_push_global_object(self.inner);
         }
+        self
     }
 
-    pub fn pop(&mut self, mut index: i32) {
+    pub fn push_global_stash(&mut self) -> &mut Self {
+        unsafe {
+            duk::duk_push_global_stash(self.inner);
+        }
+        self
+    }
+
+    pub fn dup(&mut self, idx: Idx) -> &mut Self {
+        unsafe { duk::duk_dup(self.inner, idx) };
+        self
+    }
+
+    pub fn pop(&mut self, mut index: Idx) -> &mut Self {
         let top = self.top();
         if index > top {
             index = top;
         }
         if index == 0 {
-            return;
+            return self;
         }
         unsafe {
             duk::duk_pop_n(self.inner, index);
         };
+
+        self
+    }
+
+    pub fn remove(&mut self, idx: Idx) -> &mut Self {
+        unsafe { duk::duk_remove(self.inner, idx) };
+        self
     }
 
     pub fn top(&self) -> i32 {
         unsafe { duk::duk_get_top(self.inner) }
     }
 
-    pub fn put_prop_string<T: AsRef<str>>(&mut self, index: i32, name: T) {
+    pub fn is_valid_index(&self, index: i32) -> bool {
+        unsafe {
+            if duk::duk_is_valid_index(self.inner, index) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
+    /// Properties
+
+    ///
+    pub fn put_prop_string<T: AsRef<[u8]>>(&mut self, index: i32, name: T) -> &mut Self {
         unsafe {
             duk::duk_put_prop_lstring(
                 self.inner,
@@ -105,9 +192,10 @@ impl Context {
                 name.as_ref().len(),
             );
         }
+        self
     }
 
-    pub fn get_prop_string<T: AsRef<str>>(&mut self, index: i32, name: T) {
+    pub fn get_prop_string<T: AsRef<[u8]>>(&self, index: i32, name: T) -> &Self {
         unsafe {
             duk::duk_get_prop_lstring(
                 self.inner,
@@ -116,9 +204,10 @@ impl Context {
                 name.as_ref().len(),
             );
         }
+        self
     }
 
-    pub fn del_prop_string<T: AsRef<str>>(&mut self, index: i32, name: T) {
+    pub fn del_prop_string<T: AsRef<[u8]>>(&mut self, index: i32, name: T) -> &mut Self {
         unsafe {
             duk::duk_del_prop_lstring(
                 self.inner,
@@ -127,6 +216,133 @@ impl Context {
                 name.as_ref().len(),
             );
         }
+        self
+    }
+
+    pub fn has_prop_string<T: AsRef<[u8]>>(&self, index: i32, name: T) -> bool {
+        unsafe {
+            if duk::duk_has_prop_lstring(
+                self.inner,
+                index,
+                name.as_ref().as_ptr() as *const i8,
+                name.as_ref().len(),
+            ) == 1
+            {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    /// Checks
+
+    pub fn is_string(&self, index: i32) -> bool {
+        unsafe {
+            if duk::duk_is_string(self.inner, index) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    pub fn is_number(&self, index: i32) -> bool {
+        unsafe {
+            if duk::duk_is_number(self.inner, index) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    pub fn is_boolean(&self, index: i32) -> bool {
+        unsafe {
+            if duk::duk_is_boolean(self.inner, index) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    pub fn is_object(&self, index: i32) -> bool {
+        unsafe {
+            if duk::duk_is_object(self.inner, index) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    pub fn is_function(&self, index: i32) -> bool {
+        unsafe {
+            if duk::duk_is_function(self.inner, index) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    pub fn is_undefined(&self, index: Idx) -> bool {
+        unsafe {
+            if duk::duk_is_undefined(self.inner, index) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    pub fn is_array(&self, index: Idx) -> bool {
+        unsafe {
+            if duk::duk_is_array(self.inner, index) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    pub fn is(&self, t: Type) -> bool {
+        self.get_type(-1) == t
+    }
+
+    pub fn get_type(&self, index: Idx) -> Type {
+        let duk_type = unsafe { duk::duk_get_type(self.inner, index) as u32 };
+
+        match duk_type {
+            duk::DUK_TYPE_UNDEFINED => Type::Undefined,
+            duk::DUK_TYPE_NULL => Type::Null,
+            duk::DUK_TYPE_BOOLEAN => Type::Boolean,
+            duk::DUK_TYPE_NUMBER => Type::Number,
+            duk::DUK_TYPE_STRING => Type::String,
+            duk::DUK_TYPE_OBJECT => {
+                if self.is_function(index) {
+                    return Type::Function;
+                }
+                return Type::Object;
+            }
+            _ => Type::Undefined,
+        }
+    }
+
+    pub fn call(&mut self, args: i32) -> Result<()> {
+        unsafe { duk::duk_pcall(self.inner, args) };
+        Ok(())
+    }
+
+    pub fn call_method(&mut self, args: i32) -> Result<()> {
+        unsafe { duk::duk_pcall_method(self.inner, args) };
+        Ok(())
+    }
+
+    pub fn call_prop(&mut self, idx: Idx, args: i32) -> Result<()> {
+        unsafe { duk::duk_pcall_prop(self.inner, idx, args) };
+        Ok(())
     }
 }
 
@@ -141,21 +357,21 @@ impl Drop for Context {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
+#[cfg(test)]
+mod tests {
 
-//     use super::Context;
+    use super::Context;
 
-//     #[test]
-//     fn context_new() {
-//         let duk = Context::new();
-//         assert!(duk.is_some());
-//     }
+    #[test]
+    fn context_new() {
+        let duk = Context::new();
+        assert!(duk.is_some());
+    }
 
-//     #[test]
-//     fn context_eval() {
-//         let duk = Context::new().unwrap();
-//         duk.eval("2 + 2");
-//     }
+    #[test]
+    fn context_eval() {
+        let duk = Context::new().unwrap();
+        duk.eval("2 + 2");
+    }
 
-// }
+}
