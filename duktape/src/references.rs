@@ -7,22 +7,43 @@ use std::ops::Index;
 
 pub trait ArgumentList {
     fn len(&self) -> i32;
-    fn push(&self, ctx: &Context);
+    fn push(self, ctx: &Context);
 }
 
-impl<T1: Serialize> ArgumentList for (T1) {
+impl<'a> ArgumentList for &'a str {
     fn len(&self) -> i32 {
         1
     }
-    fn push(&self, ctx: &Context) {}
+
+    fn push(self, context: &Context) {
+        let len = self.len();
+        let data = self.as_ptr() as *const i8;
+        unsafe {
+            duktape_sys::duk_push_lstring(context.inner, data, len);
+        };
+    }
 }
 
-impl ArgumentList for () {
+impl<T1: 'static + Serialize, T2: 'static + Serialize> ArgumentList for (T1, T2)
+where
+    &T1: Serialize,
+    &T2: Serialize,
+{
     fn len(&self) -> i32 {
-        0
+        2
     }
-    fn push(&self, ctx: &Context) {}
+    fn push(self, ctx: &Context) {
+        ctx.push(self.0);
+        ctx.push(self.1);
+    }
 }
+
+// impl ArgumentList for () {
+//     fn len(&self) -> i32 {
+//         0
+//     }
+//     fn push(self, ctx: &Context) {}
+// }
 
 pub struct Reference<'a> {
     pub(crate) ctx: &'a Context,
@@ -78,24 +99,11 @@ impl<'a> Serialize for Reference<'a> {
     }
 }
 
-// impl<'a> Deserialize for Reference<'a> {
-//     fn from_context(ctx: &Context, index: i32) -> Result<Self> {
-//         Ok(Reference::new(ctx, -1))
-//     }
-// }
-
-// impl<'a> Clone for Reference<'a> {
-//     fn clone(&self) -> Reference<'a> {
-//         unsafe { push_ref(self.ctx.inner, self.refer) };
-//         let refer = unsafe { make_ref(self.ctx.inner) };
-
-//         unsafe { duk::duk_pop(self.ctx.inner) };
-//         Reference {
-//             ctx: self.ctx,
-//             refer,
-//         }
-//     }
-// }
+impl<'a> Deserialize<'a> for Reference<'a> {
+    fn from_context(ctx: &'a Context, index: i32) -> Result<Self> {
+        Ok(Reference::new(ctx, -1))
+    }
+}
 
 impl<'a> Drop for Reference<'a> {
     fn drop(&mut self) {
@@ -112,7 +120,7 @@ impl<'a> Object<'a> {
         Object { refer }
     }
 
-    pub fn get<T: AsRef<[u8]>, V: Deserialize>(&self, prop: T) -> Result<V> {
+    pub fn get<T: AsRef<[u8]>, V: Deserialize<'a>>(&self, prop: T) -> Result<V> {
         unsafe { push_ref(self.refer.ctx.inner, self.refer.refer) };
         let ret = self.refer.ctx.get_prop_string(-1, prop).get::<V>(-1)?;
         unsafe { duk::duk_pop_n(self.refer.ctx.inner, 2) };
@@ -143,8 +151,32 @@ impl<'a> Object<'a> {
         &self.refer
     }
 
-    pub fn call<T: AsRef<[u8]>, A: ArgumentList>(&self, fn_name: T, args: A) -> Result<()> {
+    pub fn call<T: AsRef<str>, A: ArgumentList>(&self, fn_name: T, args: A) -> Result<()> {
+        self.refer.push();
+        let idx = self.refer.ctx.normalize_index(-1);
+        self.refer.ctx.push(fn_name.as_ref());
+        let len = args.len();
+        args.push(self.refer.ctx);
+        println!("{}", self.refer.ctx.dump());
+        if let Err(e) = self.refer.ctx.call_prop(idx, len) {
+            self.refer.ctx.pop(1);
+            return Err(e);
+        }
+        self.refer.ctx.remove(-2);
         Ok(())
+    }
+}
+
+impl<'a> Serialize for Object<'a> {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        self.refer.push();
+        Ok(())
+    }
+}
+
+impl<'a> Deserialize<'a> for Object<'a> {
+    fn from_context(ctx: &'a Context, index: i32) -> Result<Self> {
+        Ok(Reference::new(ctx, -1).into_object())
     }
 }
 
@@ -167,10 +199,11 @@ impl<'a> Function<'a> {
         Function { refer }
     }
 
-    pub fn call<Args: ArgumentList, T: Deserialize>(&mut self, args: Args) -> Result<T> {
+    pub fn call<Args: ArgumentList, T: Deserialize<'a>>(&mut self, args: Args) -> Result<T> {
         self.refer.push();
+        let len = args.len();
         args.push(self.refer.ctx);
-        self.refer.ctx.call(args.len())?;
+        self.refer.ctx.call(len)?;
         let ret = self.refer.ctx.getp()?;
         Ok(ret)
     }

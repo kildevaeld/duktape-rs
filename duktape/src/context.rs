@@ -26,6 +26,30 @@ pub enum Type {
     Function,
 }
 
+macro_rules! handle_error {
+    ($ret: expr, $ctx: expr) => {
+        if ($ret) != duk::DUK_EXEC_SUCCESS as i32 {
+            if $ctx.has_prop_string(-1, "stack") {
+                $ctx.get_prop_string(-1, "stack");
+            } else {
+                $ctx.get_prop_string(-1, "message");
+            }
+
+            let msg: String;
+            if $ctx.is_string(-1) {
+                msg = $ctx.getp()?;
+            } else {
+                msg = "Uknown".to_string();
+                $ctx.pop(1);
+            }
+
+            $ctx.pop(1);
+
+            return Err(ErrorKind::TypeError(msg).into());
+        }
+    };
+}
+
 impl Context {
     /// Create a new context
     /// Will return an error, if a duk heap couldn't be created
@@ -66,24 +90,7 @@ impl Context {
             duk::duk_peval_lstring(self.inner, script.as_ptr() as *const i8, script.len())
         };
 
-        if ret != duk::DUK_EXEC_SUCCESS as i32 {
-            if self.has_prop_string(-1, "stack") {
-                self.get_prop_string(-1, "stack");
-            } else {
-                self.get_prop_string(-1, "message");
-            }
-
-            let msg: String;
-            if self.is_string(-1) {
-                msg = self.getp()?;
-            } else {
-                msg = "Uknown".to_string();
-                self.pop(1);
-            }
-            self.pop(1);
-
-            return Err(ErrorKind::TypeError(msg).into());
-        }
+        handle_error!(ret, self);
 
         Ok(())
     }
@@ -98,11 +105,11 @@ impl Context {
         }
     }
 
-    pub fn get<T: Deserialize>(&self, index: Idx) -> Result<T> {
+    pub fn get<'a, T: Deserialize<'a>>(&'a self, index: Idx) -> Result<T> {
         T::from_context(self, index)
     }
 
-    pub fn getp<T: Deserialize>(&self) -> Result<T> {
+    pub fn getp<'a, T: Deserialize<'a>>(&'a self) -> Result<T> {
         let result = self.get::<T>(-1)?;
         self.pop(1);
         Ok(result)
@@ -180,6 +187,11 @@ impl Context {
             }
         }
     }
+
+    pub fn normalize_index(&self, idx: Idx) -> Idx {
+        unsafe { duk::duk_normalize_index(self.inner, idx) }
+    }
+
     /// Properties
 
     ///
@@ -331,17 +343,20 @@ impl Context {
     }
 
     pub fn call(&self, args: i32) -> Result<()> {
-        unsafe { duk::duk_pcall(self.inner, args) };
+        let ret = unsafe { duk::duk_pcall(self.inner, args) };
+        handle_error!(ret, self);
         Ok(())
     }
 
     pub fn call_method(&self, args: i32) -> Result<()> {
-        unsafe { duk::duk_pcall_method(self.inner, args) };
+        let ret = unsafe { duk::duk_pcall_method(self.inner, args) };
+        handle_error!(ret, self);
         Ok(())
     }
 
     pub fn call_prop(&self, idx: Idx, args: i32) -> Result<()> {
-        unsafe { duk::duk_pcall_prop(self.inner, idx, args) };
+        let ret = unsafe { duk::duk_pcall_prop(self.inner, idx, args) };
+        handle_error!(ret, self);
         Ok(())
     }
 }

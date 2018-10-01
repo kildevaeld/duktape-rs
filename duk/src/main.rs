@@ -77,23 +77,21 @@ fn main() -> duktape::error::Result<()> {
     let data = fs::read(path).unwrap();
 
     ctx.eval(data)?;
-    ctx.pop(1).push_object();
-    let r = duktape::Reference::new(&mut ctx, -1);
-    let mut f = r.into_object();
-    f.set("test", "Hello, World");
-    f.set(
+    let mut f = ctx.pop(1).push_object().get::<duktape::Object>(-1)?;
+
+    f.set("test", "Hello, World").set(
         "rapper",
         duktape::cb(
             1,
             Box::new(|ctx| {
+                if !ctx.is(duktape::Type::String) {}
                 println!("Hello {}", ctx.get::<String>(0)?);
                 Ok(0)
             }),
         ),
     );
-    f.call("fn_name: T", ("Hello"))?;
-    //ctx.pop(1);
-    //println!("{}", ctx.dump());
+    println!("{}", ctx.dump());
+    f.call("rapper", "Hello")?;
 
     sleep_ms(10000);
 

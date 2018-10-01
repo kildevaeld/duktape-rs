@@ -7,8 +7,8 @@ pub trait Serialize {
     fn to_context(self, ctx: &Context) -> Result<()>;
 }
 
-pub trait Deserialize: Sized {
-    fn from_context(ctx: &Context, index: i32) -> Result<Self>;
+pub trait Deserialize<'de>: Sized {
+    fn from_context(ctx: &'de Context, index: i32) -> Result<Self>;
 }
 
 macro_rules! impl_for_ser {
@@ -24,8 +24,8 @@ macro_rules! impl_for_ser {
 
 macro_rules! impl_for_der {
     ($T:ty, $func:ident, $check:ident) => {
-        impl Deserialize for $T {
-            fn from_context(context: &Context, index: i32) -> Result<Self> {
+        impl<'de> Deserialize<'de> for $T {
+            fn from_context(context: &'de Context, index: i32) -> Result<Self> {
                 let can = unsafe {
                     if duktape_sys::$check(context.inner, index) == 1 {
                         true
@@ -62,8 +62,8 @@ impl_for_der!(u8, duk_get_number, duk_is_number);
 impl_for_der!(u16, duk_get_number, duk_is_number);
 impl_for_der!(u32, duk_get_number, duk_is_number);
 
-impl Deserialize for bool {
-    fn from_context(ctx: &Context, index: i32) -> Result<Self> {
+impl<'de> Deserialize<'de> for bool {
+    fn from_context(ctx: &'de Context, index: i32) -> Result<Self> {
         let ret = unsafe {
             let b = duktape_sys::duk_get_boolean(ctx.inner, index);
             if b == 1 {
@@ -109,8 +109,8 @@ impl<'a> Serialize for &'a str {
     }
 }
 
-impl Deserialize for String {
-    fn from_context(ctx: &Context, index: i32) -> Result<Self> {
+impl<'de> Deserialize<'de> for String {
+    fn from_context(ctx: &'de Context, index: i32) -> Result<Self> {
         let ret = unsafe {
             let ostr = duktape_sys::duk_get_string(ctx.inner, index);
             CStr::from_ptr(ostr).to_str().unwrap().to_string()
