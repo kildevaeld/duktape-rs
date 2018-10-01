@@ -1,6 +1,37 @@
 use duktape_sys::{self as duk, duk_context};
-
+use std::ffi::c_void;
+use typemap::TypeMap;
 static REF_KEY: &'static [u8] = b"refs";
+static DATA_KEY: &'static [u8] = b"data";
+
+pub unsafe fn init_data(ctx: *mut duk_context) {
+    duk::duk_push_global_stash(ctx);
+    if duk::duk_has_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, 4) == 1 {
+        duk::duk_pop(ctx);
+        return;
+    }
+    duk::duk_push_bare_object(ctx);
+    let b = Box::new(TypeMap::new());
+    duk::duk_push_pointer(ctx, Box::into_raw(b) as *mut c_void);
+    duk::duk_put_prop_lstring(ctx, -2, "ptr".as_ptr() as *const i8, 3);
+    duk::duk_put_prop_lstring(ctx, -2, DATA_KEY.as_ptr() as *const i8, 4);
+    duk::duk_pop(ctx);
+}
+
+pub unsafe fn get_data(ctx: *mut duk_context) -> Option<Box<TypeMap>> {
+    duk::duk_push_global_stash(ctx);
+    if duk::duk_has_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, 4) == 1 {
+        duk::duk_pop(ctx);
+        return None;
+    }
+
+    duk::duk_get_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, 4);
+    duk::duk_get_prop_lstring(ctx, -1, "ptr".as_ptr() as *const i8, 3);
+    let ptr = duk::duk_get_pointer(ctx, -1) as *mut TypeMap;
+    let map = Box::from_raw(ptr);
+    duk::duk_pop_n(ctx, 3);
+    Some(map)
+}
 
 pub unsafe fn init_refs(ctx: *mut duk_context) {
     duk::duk_push_global_stash(ctx);

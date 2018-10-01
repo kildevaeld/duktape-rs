@@ -2,6 +2,7 @@ use super::encoding::{Deserialize, Serialize};
 use super::error::{ErrorKind, Result};
 use super::internal;
 use super::references;
+use typemap::{Key, TypeMap};
 
 use duktape_sys::{self as duk, duk_context};
 use std::ffi::CStr;
@@ -61,7 +62,7 @@ impl Context {
         }
 
         unsafe { internal::init_refs(d) };
-
+        unsafe { internal::init_data(d) };
         Ok(Context {
             inner: d,
             managed: true,
@@ -72,6 +73,7 @@ impl Context {
     /// The duktape context will **not** be managed.
     pub fn with(duk: *mut duk_context) -> Context {
         unsafe { internal::init_refs(duk) };
+        unsafe { internal::init_data(duk) };
         Context {
             inner: duk,
             managed: false,

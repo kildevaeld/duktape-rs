@@ -19,6 +19,13 @@ macro_rules! impl_for_ser {
                 Ok(())
             }
         }
+
+        impl Serialize for &$T {
+            fn to_context(self, context: &Context) -> Result<()> {
+                unsafe { duktape_sys::$func(context.inner, *self as $U) };
+                Ok(())
+            }
+        }
     };
 }
 
@@ -76,6 +83,33 @@ impl<'de> Deserialize<'de> for bool {
     }
 }
 
+impl Serialize for () {
+    fn to_context(self, context: &Context) -> Result<()> {
+        unsafe { duktape_sys::duk_push_undefined(context.inner) };
+        Ok(())
+    }
+}
+
+impl<'de> Deserialize<'de> for () {
+    fn from_context(ctx: &'de Context, index: i32) -> Result<Self> {
+        // let ret = unsafe {
+        //     let ostr = duktape_sys::duk_get_string(ctx.inner, index);
+        //     CStr::from_ptr(ostr).to_str().unwrap().to_string()
+        // };
+        Ok(())
+    }
+}
+
+impl<T: Serialize> Serialize for Option<T> {
+    fn to_context(self, context: &Context) -> Result<()> {
+        match self {
+            Some(t) => context.push(t),
+            None => context.push(()),
+        };
+        Ok(())
+    }
+}
+
 impl Serialize for String {
     fn to_context(self, context: &Context) -> Result<()> {
         let len = self.len();
@@ -88,22 +122,33 @@ impl Serialize for String {
     }
 }
 
-impl<'a> Serialize for &'a String {
-    fn to_context(self, context: &Context) -> Result<()> {
-        let data = self.as_ptr() as *const i8;
-        unsafe {
-            duktape_sys::duk_push_string(context.inner, data);
-        };
-        Ok(())
-    }
-}
-
 impl<'a> Serialize for &'a str {
     fn to_context(self, context: &Context) -> Result<()> {
         let len = self.len();
         let data = self.as_ptr() as *const i8;
         unsafe {
             duktape_sys::duk_push_lstring(context.inner, data, len);
+        };
+        Ok(())
+    }
+}
+
+impl<'a> Serialize for &'a &'a str {
+    fn to_context(self, context: &Context) -> Result<()> {
+        let len = self.len();
+        let data = self.as_ptr() as *const i8;
+        unsafe {
+            duktape_sys::duk_push_lstring(context.inner, data, len);
+        };
+        Ok(())
+    }
+}
+
+impl<'a> Serialize for &'a String {
+    fn to_context(self, context: &Context) -> Result<()> {
+        let data = self.as_ptr() as *const i8;
+        unsafe {
+            duktape_sys::duk_push_string(context.inner, data);
         };
         Ok(())
     }

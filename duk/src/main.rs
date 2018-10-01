@@ -82,16 +82,26 @@ fn main() -> duktape::error::Result<()> {
     f.set("test", "Hello, World").set(
         "rapper",
         duktape::cb(
-            1,
+            2,
             Box::new(|ctx| {
                 if !ctx.is(duktape::Type::String) {}
                 println!("Hello {}", ctx.get::<String>(0)?);
-                Ok(0)
+                ctx.push(format!("Back {}", ctx.get::<i32>(1)? + 1));
+                Ok(1)
             }),
         ),
     );
     println!("{}", ctx.dump());
-    f.call("rapper", "Hello")?;
+    let ret: String = f.call("rapper", ("Hello", 2))?;
+
+    println!("{}", ret);
+
+    let o: duktape::Object = ctx.push_global_object().getp()?;
+
+    let ret: i32 = o
+        .get::<&str, duktape::Object>("Math")?
+        .call("min", (1002, 20))?;
+    println!("result {}", ret);
 
     sleep_ms(10000);
 

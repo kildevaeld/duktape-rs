@@ -151,19 +151,22 @@ impl<'a> Object<'a> {
         &self.refer
     }
 
-    pub fn call<T: AsRef<str>, A: ArgumentList>(&self, fn_name: T, args: A) -> Result<()> {
+    pub fn call<T: AsRef<str>, A: ArgumentList, R: Deserialize<'a>>(
+        &self,
+        fn_name: T,
+        args: A,
+    ) -> Result<R> {
         self.refer.push();
         let idx = self.refer.ctx.normalize_index(-1);
         self.refer.ctx.push(fn_name.as_ref());
         let len = args.len();
         args.push(self.refer.ctx);
-        println!("{}", self.refer.ctx.dump());
         if let Err(e) = self.refer.ctx.call_prop(idx, len) {
             self.refer.ctx.pop(1);
             return Err(e);
         }
         self.refer.ctx.remove(-2);
-        Ok(())
+        self.refer.ctx.getp()
     }
 }
 
