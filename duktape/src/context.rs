@@ -2,11 +2,12 @@ use super::encoding::{Deserialize, Serialize};
 use super::error::{ErrorKind, Result};
 use super::internal;
 use super::references;
-use typemap::{Key, TypeMap};
-
 use duktape_sys::{self as duk, duk_context};
 use std::ffi::CStr;
+use std::fmt;
 use std::ptr;
+use std::result;
+use typemap::{Key, TypeMap};
 
 pub struct Context {
     pub(crate) inner: *mut duk_context,
@@ -15,7 +16,7 @@ pub struct Context {
 
 pub type Idx = i32;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum Type {
     Undefined,
     Null,
@@ -47,6 +48,31 @@ macro_rules! handle_error {
             $ctx.pop(1);
 
             return Err(ErrorKind::TypeError(msg).into());
+        }
+    };
+}
+
+macro_rules! check_impl {
+    ($ret:ident, $func:ident) => {
+        pub fn $ret (&self, index:Idx) -> bool {
+            unsafe {
+                if duk::$func(self.inner, index) == 1 {
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+    };
+}
+
+macro_rules! push_impl {
+    ($ret:ident, $func:ident) => {
+        pub fn $ret (&self) -> &Self {
+            unsafe {
+                duk::$func(self.inner)
+            };
+            self
         }
     };
 }
@@ -112,7 +138,7 @@ impl Context {
     }
 
     pub fn getp<'a, T: Deserialize<'a>>(&'a self) -> Result<T> {
-        let result = self.get::<T>(-1)?;
+        let result = T::from_context(self, -1)?;
         self.pop(1);
         Ok(result)
     }
@@ -123,33 +149,11 @@ impl Context {
         self
     }
 
-    pub fn push_object(&self) -> &Self {
-        unsafe {
-            duk::duk_push_object(self.inner);
-        }
-        self
-    }
-
-    pub fn push_bare_object(&self) -> &Self {
-        unsafe {
-            duk::duk_push_bare_object(self.inner);
-        }
-        self
-    }
-
-    pub fn push_global_object(&self) -> &Self {
-        unsafe {
-            duk::duk_push_global_object(self.inner);
-        }
-        self
-    }
-
-    pub fn push_global_stash(&self) -> &Self {
-        unsafe {
-            duk::duk_push_global_stash(self.inner);
-        }
-        self
-    }
+    push_impl!(push_object, duk_push_object);
+    push_impl!(push_bare_object, duk_push_bare_object);
+    push_impl!(push_array, duk_push_array);
+    push_impl!(push_global_object, duk_push_global_object);
+    push_impl!(push_global_stash, duk_push_global_stash);
 
     pub fn dup(&self, idx: Idx) -> &Self {
         unsafe { duk::duk_dup(self.inner, idx) };
@@ -192,6 +196,10 @@ impl Context {
 
     pub fn normalize_index(&self, idx: Idx) -> Idx {
         unsafe { duk::duk_normalize_index(self.inner, idx) }
+    }
+
+    pub fn get_length(&self, idx: Idx) -> usize {
+        unsafe { duk::duk_get_length(self.inner, idx) }
     }
 
     /// Properties
@@ -249,77 +257,54 @@ impl Context {
         }
     }
 
+    pub fn put_prop_index(&self, aidx: Idx, index: u32) -> &Self {
+        unsafe {
+            duk::duk_put_prop_index(self.inner, aidx, index);
+        }
+        self
+    }
+
+    pub fn get_prop_index(&self, aidx: Idx, index: u32) -> &Self {
+        unsafe {
+            duk::duk_get_prop_index(self.inner, aidx, index);
+        }
+        self
+    }
+
+    pub fn del_prop_index(&self, aidx: Idx, index: u32) -> &Self {
+        unsafe {
+            duk::duk_del_prop_index(self.inner, aidx, index);
+        }
+        self
+    }
+
+    pub fn has_prop_index(&self, aidx: Idx, index: u32) -> bool {
+        unsafe {
+            if duk::duk_has_prop_index(self.inner, aidx, index) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
+
     /// Checks
+    /// Check if value at index is a string
+    check_impl!(is_string, duk_is_string);
 
-    pub fn is_string(&self, index: i32) -> bool {
-        unsafe {
-            if duk::duk_is_string(self.inner, index) == 1 {
-                true
-            } else {
-                false
-            }
-        }
-    }
+    check_impl!(is_number, duk_is_number);
 
-    pub fn is_number(&self, index: i32) -> bool {
-        unsafe {
-            if duk::duk_is_number(self.inner, index) == 1 {
-                true
-            } else {
-                false
-            }
-        }
-    }
+    check_impl!(is_boolean, duk_is_boolean);
 
-    pub fn is_boolean(&self, index: i32) -> bool {
-        unsafe {
-            if duk::duk_is_boolean(self.inner, index) == 1 {
-                true
-            } else {
-                false
-            }
-        }
-    }
+    check_impl!(is_object, duk_is_object);
 
-    pub fn is_object(&self, index: i32) -> bool {
-        unsafe {
-            if duk::duk_is_object(self.inner, index) == 1 {
-                true
-            } else {
-                false
-            }
-        }
-    }
+    check_impl!(is_function, duk_is_function);
 
-    pub fn is_function(&self, index: i32) -> bool {
-        unsafe {
-            if duk::duk_is_function(self.inner, index) == 1 {
-                true
-            } else {
-                false
-            }
-        }
-    }
+    check_impl!(is_undefined, duk_is_undefined);
 
-    pub fn is_undefined(&self, index: Idx) -> bool {
-        unsafe {
-            if duk::duk_is_undefined(self.inner, index) == 1 {
-                true
-            } else {
-                false
-            }
-        }
-    }
+    check_impl!(is_null, duk_is_null);
 
-    pub fn is_array(&self, index: Idx) -> bool {
-        unsafe {
-            if duk::duk_is_array(self.inner, index) == 1 {
-                true
-            } else {
-                false
-            }
-        }
-    }
+    check_impl!(is_array, duk_is_array);
 
     pub fn is(&self, t: Type) -> bool {
         self.get_type(-1) == t
@@ -337,6 +322,8 @@ impl Context {
             duk::DUK_TYPE_OBJECT => {
                 if self.is_function(index) {
                     return Type::Function;
+                } else if self.is_array(index) {
+                    return Type::Array;
                 }
                 return Type::Object;
             }
@@ -374,6 +361,12 @@ impl Drop for Context {
     }
 }
 
+impl fmt::Debug for Context {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.dump())
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -382,7 +375,7 @@ mod tests {
     #[test]
     fn context_new() {
         let duk = Context::new();
-        assert!(duk.is_some());
+        assert!(duk.is_ok());
     }
 
     #[test]

@@ -157,9 +157,29 @@ impl<'a> Serialize for &'a String {
 impl<'de> Deserialize<'de> for String {
     fn from_context(ctx: &'de Context, index: i32) -> Result<Self> {
         let ret = unsafe {
+            if !ctx.is_string(index) {
+                return Err(ErrorKind::TypeError(format!(
+                    "expected string, got: {:?}",
+                    ctx.get_type(index)
+                ))
+                .into());
+            }
             let ostr = duktape_sys::duk_get_string(ctx.inner, index);
             CStr::from_ptr(ostr).to_str().unwrap().to_string()
         };
         Ok(ret)
+    }
+}
+
+impl<'a, T: Serialize> Serialize for Vec<T> {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        ctx.push_array();
+        let mut i = 0;
+        for v in self {
+            ctx.push(v).put_prop_index(-2, i);
+            i += 1;
+        }
+
+        Ok(())
     }
 }

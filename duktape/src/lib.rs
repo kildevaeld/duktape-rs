@@ -1,3 +1,5 @@
+#![feature(concat_idents)]
+
 extern crate duktape_sys;
 #[macro_use]
 extern crate error_chain;

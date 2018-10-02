@@ -34,14 +34,16 @@ impl Test {
                     io::stdout().lock().write(s.as_bytes());
                     Ok(0)
                 }),
-            )).put_prop_string(-2, "write")
+            ))
+            .put_prop_string(-2, "write")
             .push(duktape::cb(
                 0,
                 Box::new(|ctx| {
                     io::stdout().lock().flush();
                     Ok(0)
                 }),
-            )).put_prop_string(-2, "flush")
+            ))
+            .put_prop_string(-2, "flush")
             .put_prop_string(-2, "stdout");
     }
 }
@@ -91,8 +93,8 @@ fn main() -> duktape::error::Result<()> {
             }),
         ),
     );
-    println!("{}", ctx.dump());
-    let ret: String = f.call("rapper", ("Hello", 2))?;
+    println!("{:?}", ctx);
+    let ret: String = f.call("rapper", ("Hello", 2, 23))?;
 
     println!("{}", ret);
 
@@ -102,6 +104,16 @@ fn main() -> duktape::error::Result<()> {
         .get::<&str, duktape::Object>("Math")?
         .call("min", (1002, 20))?;
     println!("result {}", ret);
+
+    let array: duktape::Array = ctx.push_array().getp()?;
+    array.push("Hello").push(2).push("fixed");
+
+    for a in array.iter() {
+        println!("{}", a);
+    }
+
+    ctx.push(vec!["Hello", "Array", "rerere"]);
+    println!("{}", ctx.dump());
 
     sleep_ms(10000);
 

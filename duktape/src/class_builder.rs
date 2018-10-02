@@ -71,29 +71,6 @@ unsafe extern "C" fn class_ctor(ctx: *mut duk::duk_context) -> duk::duk_ret_t {
     }
 
     ctx.put_prop_string(-2, DATA_KEY);
-    // duk_push_current_function(ctx);
-    // duk_get_prop_string(ctx, -1, KEY.as_ptr() as *const i8);
-    // let mut c = Context::with(ctx);
-
-    // let ptr = duk_get_pointer(ctx, -1) as *mut Box<dyn Callable>;
-    // let pp = Box::from_raw(ptr);
-    // duk_pop_2(ctx);
-    // let ret = match pp.call(&mut c) {
-    //     Err(e) => {
-    //         duk_error_raw(
-    //             ctx,
-    //             DUK_ERR_ERROR as i32,
-    //             "".as_ptr() as *const i8,
-    //             0,
-    //             CString::new(format!("{}", e.0)).unwrap().as_ptr(),
-    //         );
-    //         -1
-    //     }
-    //     Ok(ret) => ret,
-    // };
-
-    // // It should not be dropped
-    // Box::into_raw(pp);
 
     return 0;
 }

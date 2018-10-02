@@ -3,7 +3,8 @@ use super::encoding::{Deserialize, Serialize};
 use super::error::{ErrorKind, Result};
 use super::internal::{make_ref, push_ref, unref};
 use duktape_sys as duk;
-use std::ops::Index;
+use std::fmt;
+use std::iter;
 
 pub trait ArgumentList {
     fn len(&self) -> i32;
@@ -38,12 +39,22 @@ where
     }
 }
 
-// impl ArgumentList for () {
-//     fn len(&self) -> i32 {
-//         0
-//     }
-//     fn push(self, ctx: &Context) {}
-// }
+impl<T1: 'static + Serialize, T2: 'static + Serialize, T3: 'static + Serialize> ArgumentList
+    for (T1, T2, T3)
+where
+    &T1: Serialize,
+    &T2: Serialize,
+    &T3: Serialize,
+{
+    fn len(&self) -> i32 {
+        3
+    }
+    fn push(self, ctx: &Context) {
+        ctx.push(self.0);
+        ctx.push(self.1);
+        ctx.push(self.2);
+    }
+}
 
 pub struct Reference<'a> {
     pub(crate) ctx: &'a Context,
@@ -78,7 +89,14 @@ impl<'a> Reference<'a> {
     pub fn get_type(&self) -> Type {
         unsafe { push_ref(self.ctx.inner, self.refer) };
         let ret = self.ctx.get_type(-1);
-        unsafe { duk::duk_pop(self.ctx.inner) };
+        self.ctx.pop(1);
+        ret
+    }
+
+    pub fn get<T: Deserialize<'a>>(&self) -> Result<T> {
+        self.push();
+        let ret = self.ctx.get::<T>(-1);
+        self.ctx.pop(1);
         ret
     }
 
@@ -101,7 +119,18 @@ impl<'a> Serialize for Reference<'a> {
 
 impl<'a> Deserialize<'a> for Reference<'a> {
     fn from_context(ctx: &'a Context, index: i32) -> Result<Self> {
-        Ok(Reference::new(ctx, -1))
+        Ok(Reference::new(ctx, index))
+    }
+}
+
+impl<'a> fmt::Display for Reference<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match self.get_type() {
+            Type::String => self.get::<String>().unwrap(),
+            Type::Number => format!("{}", self.get::<u32>().unwrap()),
+            _ => format!(""),
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -171,7 +200,7 @@ impl<'a> Object<'a> {
 }
 
 impl<'a> Serialize for Object<'a> {
-    fn to_context(self, ctx: &Context) -> Result<()> {
+    fn to_context(self, _ctx: &Context) -> Result<()> {
         self.refer.push();
         Ok(())
     }
@@ -179,7 +208,7 @@ impl<'a> Serialize for Object<'a> {
 
 impl<'a> Deserialize<'a> for Object<'a> {
     fn from_context(ctx: &'a Context, index: i32) -> Result<Self> {
-        Ok(Reference::new(ctx, -1).into_object())
+        Ok(Reference::new(ctx, index).into_object())
     }
 }
 
@@ -190,6 +219,83 @@ pub struct Array<'a> {
 impl<'a> Array<'a> {
     pub(crate) fn new(refer: Reference<'a>) -> Array<'a> {
         Array { refer }
+    }
+
+    pub fn push<V: Serialize>(&self, value: V) -> &Self {
+        self.refer.push();
+        self.refer.ctx.push(value);
+        self.refer.ctx.put_prop_index(-2, self.len() as u32);
+        self.refer.ctx.pop(1);
+
+        self
+    }
+
+    pub fn get<V: Deserialize<'a>>(&self, idx: u32) -> Result<V> {
+        self.refer.push();
+        self.refer.ctx.get_prop_index(-1, idx);
+
+        let ret = self.refer.ctx.get::<V>(-1)?;
+
+        self.refer.ctx.pop(2);
+
+        Ok(ret)
+    }
+
+    pub fn len(&self) -> usize {
+        self.refer.push();
+        let ret = self.refer.ctx.get_length(-1);
+        self.refer.ctx.pop(1);
+        ret
+    }
+
+    pub fn iter(&'a self) -> impl iter::Iterator<Item = Reference<'a>> {
+        ArrayIterator::new(self)
+    }
+}
+
+impl<'a> Serialize for Array<'a> {
+    fn to_context(self, _ctx: &Context) -> Result<()> {
+        self.refer.push();
+        Ok(())
+    }
+}
+
+impl<'a> Deserialize<'a> for Array<'a> {
+    fn from_context(ctx: &'a Context, index: i32) -> Result<Self> {
+        Reference::new(ctx, index).into_array()
+    }
+}
+
+struct ArrayIterator<'a> {
+    array: &'a Array<'a>,
+    index: u32,
+}
+
+impl<'a> ArrayIterator<'a> {
+    pub fn new(array: &'a Array<'a>) -> ArrayIterator<'a> {
+        ArrayIterator {
+            array: array,
+            index: 0,
+        }
+    }
+}
+
+impl<'a> iter::Iterator for ArrayIterator<'a> {
+    type Item = Reference<'a>;
+
+    fn next(&mut self) -> Option<Reference<'a>> {
+        if self.index == self.array.len() as u32 {
+            return None;
+        }
+
+        let r = match self.array.get::<Reference>(self.index) {
+            Ok(m) => m,
+            Err(_) => return None,
+        };
+
+        self.index += 1;
+
+        Some(r)
     }
 }
 
