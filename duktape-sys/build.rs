@@ -1,14 +1,10 @@
 extern crate bindgen;
 extern crate gcc;
 
-use std::path::{Path, PathBuf};
-use std::{env, fs};
+use std::env;
+use std::path::PathBuf;
 
 fn main() {
-    // let out_dir = env::var("OUT_DIR").unwrap();
-    // let out_path = Path::new(&out_dir).join("bindings.rs");
-    // fs::copy("duktape/bindings.rs", out_path).expect("Could not copy bindings to output directory");
-
     let bindings = bindgen::Builder::default()
         // The input header we would like to generate
         // bindings for.

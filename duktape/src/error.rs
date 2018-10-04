@@ -1,8 +1,3 @@
-use std::fmt::Display;
-
-#[cfg(feature = "serde")]
-use serde::ser;
-
 error_chain!{
     errors {
         Unknown {
@@ -17,13 +12,5 @@ error_chain!{
             description("TypeError")
             display("Type error: {}", message)
         }
-    }
-}
-
-#[cfg(feature = "serde")]
-impl ser::Error for Error {
-    #[cold]
-    fn custom<T: Display>(msg: T) -> Error {
-        ErrorKind::Unknown.into()
     }
 }

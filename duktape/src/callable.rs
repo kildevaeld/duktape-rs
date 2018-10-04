@@ -3,7 +3,6 @@ use super::encoding::Serialize;
 use super::error::Result;
 use duktape_sys::*;
 use std::ffi::{c_void, CString};
-use std::mem;
 
 static KEY: &'static [u8] = b"\xFFptr";
 

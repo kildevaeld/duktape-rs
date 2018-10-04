@@ -5,10 +5,13 @@ extern crate duktape;
 extern crate lazy_static;
 extern crate regex;
 
+//mod class_builder;
+//pub mod class;
 mod commonjs;
 pub mod error;
 mod types;
 
+//pub use self::class::*;
 pub use self::commonjs::RequireBuilder;
 pub use self::types::*;
 

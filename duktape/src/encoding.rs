@@ -91,11 +91,7 @@ impl Serialize for () {
 }
 
 impl<'de> Deserialize<'de> for () {
-    fn from_context(ctx: &'de Context, index: i32) -> Result<Self> {
-        // let ret = unsafe {
-        //     let ostr = duktape_sys::duk_get_string(ctx.inner, index);
-        //     CStr::from_ptr(ostr).to_str().unwrap().to_string()
-        // };
+    fn from_context(_ctx: &'de Context, _index: i32) -> Result<Self> {
         Ok(())
     }
 }

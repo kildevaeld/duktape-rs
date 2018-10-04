@@ -18,20 +18,20 @@ pub unsafe fn init_data(ctx: *mut duk_context) {
     duk::duk_pop(ctx);
 }
 
-pub unsafe fn get_data(ctx: *mut duk_context) -> Option<Box<TypeMap>> {
-    duk::duk_push_global_stash(ctx);
-    if duk::duk_has_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, 4) == 1 {
-        duk::duk_pop(ctx);
-        return None;
-    }
+// pub unsafe fn get_data(ctx: *mut duk_context) -> Option<Box<TypeMap>> {
+//     duk::duk_push_global_stash(ctx);
+//     if duk::duk_has_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, 4) == 1 {
+//         duk::duk_pop(ctx);
+//         return None;
+//     }
 
-    duk::duk_get_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, 4);
-    duk::duk_get_prop_lstring(ctx, -1, "ptr".as_ptr() as *const i8, 3);
-    let ptr = duk::duk_get_pointer(ctx, -1) as *mut TypeMap;
-    let map = Box::from_raw(ptr);
-    duk::duk_pop_n(ctx, 3);
-    Some(map)
-}
+//     duk::duk_get_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, 4);
+//     duk::duk_get_prop_lstring(ctx, -1, "ptr".as_ptr() as *const i8, 3);
+//     let ptr = duk::duk_get_pointer(ctx, -1) as *mut TypeMap;
+//     let map = Box::from_raw(ptr);
+//     duk::duk_pop_n(ctx, 3);
+//     Some(map)
+// }
 
 pub unsafe fn init_refs(ctx: *mut duk_context) {
     duk::duk_push_global_stash(ctx);

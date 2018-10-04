@@ -1,5 +1,6 @@
 use super::duktape_ffi as duktape;
 use super::duktape_ffi::*;
+use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::ptr;
 
@@ -279,4 +280,12 @@ pub unsafe fn duk_pcompile_lstring_filename(
     len: duktape::duk_size_t,
 ) -> duktape::duk_int_t {
     duktape::duk_compile_raw(ctx, buf, len, 1 | flags | DUK_COMPILE_NOSOURCE)
+}
+
+pub unsafe fn duk_dump_context_stdout(ctx: *mut duktape::duk_context) {
+    duk_push_context_dump(ctx);
+    let ostr = duk_get_string(ctx, -1);
+    let s = CStr::from_ptr(ostr).to_str().unwrap().to_string();
+    duk_pop(ctx);
+    println!("{}", s);
 }

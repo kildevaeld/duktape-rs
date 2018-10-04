@@ -1,13 +1,10 @@
 use super::encoding::{Deserialize, Serialize};
 use super::error::{ErrorKind, Result};
-use super::internal;
-use super::references;
+use super::privates;
 use duktape_sys::{self as duk, duk_context};
 use std::ffi::CStr;
 use std::fmt;
 use std::ptr;
-use std::result;
-use typemap::{Key, TypeMap};
 
 pub struct Context {
     pub(crate) inner: *mut duk_context,
@@ -87,8 +84,8 @@ impl Context {
             return Err(ErrorKind::InsufficientMemory.into());
         }
 
-        unsafe { internal::init_refs(d) };
-        unsafe { internal::init_data(d) };
+        unsafe { privates::init_refs(d) };
+        unsafe { privates::init_data(d) };
         Ok(Context {
             inner: d,
             managed: true,
@@ -98,8 +95,8 @@ impl Context {
     /// Create a new context, from a given duktape context
     /// The duktape context will **not** be managed.
     pub fn with(duk: *mut duk_context) -> Context {
-        unsafe { internal::init_refs(duk) };
-        unsafe { internal::init_data(duk) };
+        unsafe { privates::init_refs(duk) };
+        unsafe { privates::init_data(duk) };
         Context {
             inner: duk,
             managed: false,
@@ -347,6 +344,11 @@ impl Context {
         let ret = unsafe { duk::duk_pcall_prop(self.inner, idx, args) };
         handle_error!(ret, self);
         Ok(())
+    }
+
+    pub fn set_finalizer(&self, idx: Idx) -> &Self {
+        unsafe { duk::duk_set_finalizer(self.inner, idx) };
+        self
     }
 }
 
