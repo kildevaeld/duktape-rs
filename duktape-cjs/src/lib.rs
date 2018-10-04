@@ -37,7 +37,6 @@ pub fn register(ctx: &mut duktape::Context, builder: RequireBuilder) -> bool {
 
     ctx.push_global_object()
         .push(builder.build())
-        //.push(Box::new(commonjs::Require::new()) as Box<dyn duktape::Callable>)
         .put_prop_string(-2, "require");
 
     ctx.pop(1);

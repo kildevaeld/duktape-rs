@@ -105,7 +105,7 @@ impl Require {
             .put_prop_string(-2, "exports");
     }
 
-    fn load_module(&self, id: &str) -> Result<()> {
+    fn load_module(&self, id: &str, ctx: &mut Context) -> Result<()> {
         let caps = PROTOCOL_RE.captures(id).unwrap();
 
         let protocol = caps.get(1).unwrap().as_str();
@@ -123,6 +123,13 @@ impl Require {
                 .into())
             }
         };
+
+        let id = resolver.resolver.resolve(id, "").unwrap();
+
+        if self.has_cache(ctx, &id) {
+            return self.get_cache(ctx, &id);
+        }
+
         Ok(())
     }
 
