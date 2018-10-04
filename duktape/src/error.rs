@@ -1,4 +1,5 @@
 error_chain!{
+
     errors {
         Unknown {
             description("unknown error")
@@ -12,5 +13,11 @@ error_chain!{
             description("TypeError")
             display("Type error: {}", message)
         }
+        ReferenceError(message: String) {
+            description("ReferenceError")
+            display("Reference error: {}", message)
+        }
     }
+
+
 }

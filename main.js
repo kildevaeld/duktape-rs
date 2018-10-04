@@ -1,9 +1,12 @@
-var io = require('io');
-
-io.stdout.write("Hello, World\n");
-io.stdout.flush();
+var io = require('io'),
+    fs = require('fs');
 
 
-var test = new TestClass();
-test.hello();
-test.hello();
+var file = new fs.File("./test_file.txt", 'wr+');
+
+file.write("Hello, Dean!");
+
+io.stdout.write("Hello, World from js\n").flush();
+
+var buffer = io.stdin.readLine();
+file.write(buffer).close();

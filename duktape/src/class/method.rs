@@ -28,12 +28,18 @@ pub static DATA_KEY: &'static [u8] = b"\xFFdata_ptr";
 pub static CTOR_KEY: &'static [u8] = b"\xFFctor_ptr";
 
 pub trait Method {
+    fn argc(&self) -> i32 {
+        DUK_VARARGS
+    }
     fn call(&self, ctx: &mut Context, instance: &mut Instance) -> Result<i32>;
 }
 
-pub struct Wrapped<T: Fn(&mut Context, &mut Instance) -> Result<i32>>(pub T);
+pub struct Wrapped<T: Fn(&mut Context, &mut Instance) -> Result<i32>>(pub T, pub i32);
 
 impl<T: Fn(&mut Context, &mut Instance) -> Result<i32>> Method for Wrapped<T> {
+    fn argc(&self) -> i32 {
+        self.1
+    }
     fn call(&self, ctx: &mut Context, instance: &mut Instance) -> Result<i32> {
         self.0(ctx, instance)
     }
@@ -42,7 +48,7 @@ impl<T: Fn(&mut Context, &mut Instance) -> Result<i32>> Method for Wrapped<T> {
 impl Serialize for Box<dyn Method> {
     fn to_context(self, ctx: &Context) -> Result<()> {
         unsafe {
-            duk_push_c_function(ctx.ptr(), Some(call), 1);
+            duk_push_c_function(ctx.ptr(), Some(call), self.argc());
             let m = Box::new(self);
             duk_push_pointer(ctx.ptr(), Box::into_raw(m) as *mut c_void);
             duk_put_prop_lstring(ctx.ptr(), -2, KEY.as_ptr() as *const i8, KEY.len());
@@ -80,6 +86,7 @@ unsafe extern "C" fn call(ctx: *mut duk_context) -> duk_ret_t {
     duk_get_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, DATA_KEY.len());
     let ptr = duk_get_pointer(ctx, -1) as *mut Instance;
     let mut pp = Box::from_raw(ptr);
+    duk_pop(ctx);
 
     let ret = match method.call(&mut c, &mut pp) {
         Err(e) => {

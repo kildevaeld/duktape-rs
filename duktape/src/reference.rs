@@ -48,6 +48,13 @@ impl<'a> Serialize for Reference<'a> {
     }
 }
 
+impl<'a> Serialize for &'a Reference<'a> {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        unsafe { push_ref(ctx.inner, self.refer) };
+        Ok(())
+    }
+}
+
 impl<'a> Deserialize<'a> for Reference<'a> {
     fn from_context(ctx: &'a Context, index: i32) -> Result<Self> {
         Ok(Reference::new(ctx, index))
@@ -68,5 +75,14 @@ impl<'a> fmt::Display for Reference<'a> {
 impl<'a> Drop for Reference<'a> {
     fn drop(&mut self) {
         unsafe { unref(self.ctx.inner, self.refer) };
+    }
+}
+
+impl<'a> Clone for Reference<'a> {
+    fn clone(&self) -> Self {
+        self.push();
+        let r = Reference::new(self.ctx, -1);
+        self.ctx.pop(1);
+        r
     }
 }

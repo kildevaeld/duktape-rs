@@ -124,6 +124,48 @@ impl Context {
         Ok(())
     }
 
+    pub fn compile(&self, flags: u32) -> Result<&Self> {
+        let ret = unsafe { duk::duk_pcompile(self.inner, flags) };
+        handle_error!(ret, self);
+
+        Ok(self)
+    }
+
+    pub fn compile_string<T: AsRef<[u8]>>(&self, content: T, flags: u32) -> Result<()> {
+        let content = content.as_ref();
+        let len = content.len();
+
+        let ret = unsafe {
+            duk::duk_pcompile_lstring(self.inner, flags, content.as_ptr() as *const i8, len)
+        };
+        handle_error!(ret, self);
+
+        Ok(())
+    }
+
+    pub fn compile_string_filename<T: AsRef<[u8]>>(
+        &self,
+        content: T,
+        file_name: &str,
+        flags: u32,
+    ) -> Result<()> {
+        let content = content.as_ref();
+        let len = content.len();
+
+        let ret = unsafe {
+            duk::duk_push_lstring(self.inner, file_name.as_ptr() as *const i8, file_name.len());
+            duk::duk_pcompile_lstring_filename(
+                self.inner,
+                flags,
+                content.as_ptr() as *const i8,
+                len,
+            )
+        };
+        handle_error!(ret, self);
+
+        Ok(())
+    }
+
     pub fn dump(&self) -> String {
         unsafe {
             duk::duk_push_context_dump(self.inner);
@@ -161,6 +203,17 @@ impl Context {
     push_impl!(push_global_stash, duk_push_global_stash);
     push_impl!(push_this, duk_push_this);
     push_impl!(push_current_function, duk_push_current_function);
+
+    pub fn get_global_string<T: AsRef<[u8]>>(&self, name: T) -> &Self {
+        unsafe {
+            duk::duk_get_global_lstring(
+                self.inner,
+                name.as_ref().as_ptr() as *const i8,
+                name.as_ref().len(),
+            )
+        };
+        self
+    }
 
     pub fn dup(&self, idx: Idx) -> &Self {
         unsafe { duk::duk_dup(self.inner, idx) };
@@ -338,6 +391,15 @@ impl Context {
         }
     }
 
+    // Strings
+    pub fn concat(&self, argc: i32) -> Result<()> {
+        if argc > self.top() {
+            return Err(ErrorKind::ReferenceError(format!("invalid index: {}", argc)).into());
+        }
+        unsafe { duk::duk_concat(self.inner, argc) };
+        Ok(())
+    }
+
     pub fn call(&self, args: i32) -> Result<()> {
         let ret = unsafe { duk::duk_pcall(self.inner, args) };
         handle_error!(ret, self);
@@ -386,7 +448,7 @@ impl fmt::Debug for Context {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
 
     use super::Context;
 
@@ -399,7 +461,21 @@ mod tests {
     #[test]
     fn context_eval() {
         let duk = Context::new().unwrap();
-        duk.eval("2 + 2");
+        duk.eval("2 + 2").unwrap();
+        let i: i8 = duk.get(-1).unwrap();
+        assert_eq!(i, 4);
+    }
+
+    #[test]
+    fn concat() {
+        let duk = Context::new().unwrap();
+        duk.push("Hello").push(",").push("World").push(2);
+        duk.concat(4).unwrap();
+        let i: String = duk.get(-1).unwrap();
+        assert_eq!(i, "Hello,World2");
+
+        let ret = duk.concat(4);
+        assert!(ret.is_err());
     }
 
 }

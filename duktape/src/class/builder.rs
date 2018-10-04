@@ -1,4 +1,8 @@
-use super::super::{error::Result, Context, Serialize};
+use super::super::{
+    error::Result,
+    types::{Function, Object},
+    Context, Serialize,
+};
 use super::method::{Instance, Method, Wrapped, CTOR_KEY, DATA_KEY};
 use duktape_sys as duk;
 use std::collections::HashMap;
@@ -10,46 +14,59 @@ pub enum Prototype {
 }
 
 #[derive(Default)]
-pub struct Builder {
+pub struct Builder<'a> {
     ctor: Option<Box<dyn Method>>,
+    parent: Option<Function<'a>>,
     methods: HashMap<String, Prototype>,
 }
 
-impl Builder {
+impl<'a> Builder<'a> {
     pub fn set(&mut self, name: &str, prop: Prototype) -> &mut Self {
         self.methods.insert(name.to_owned(), prop);
         self
     }
 
-    pub fn method<T: 'static>(&mut self, name: &str, method: T) -> &mut Self
+    pub fn method<T: 'static>(&mut self, name: &str, argc: i32, method: T) -> &mut Self
     where
         T: Fn(&mut Context, &mut Instance) -> Result<i32>,
     {
-        let wrapped = Wrapped(method);
+        let wrapped = Wrapped(method, argc);
         let b: Box<dyn Method> = Box::new(wrapped);
         self.methods.insert(name.to_owned(), Prototype::Method(b));
         self
     }
 
-    pub fn constructor<T: 'static>(&mut self, ctor: T) -> &mut Self
+    pub fn constructor<T: 'static>(&mut self, argc: i32, ctor: T) -> &mut Self
     where
         T: Fn(&mut Context, &mut Instance) -> Result<i32>,
     {
-        let wrapped = Wrapped(ctor);
+        let wrapped = Wrapped(ctor, argc);
         let b: Box<dyn Method> = Box::new(wrapped);
         self.ctor = Some(b);
         self
     }
+
+    pub fn inherit(&mut self, parent: Function<'a>) -> &mut Self {
+        self.parent = Some(parent);
+        self
+    }
 }
 
-impl Serialize for Builder {
+impl<'a> Serialize for Builder<'a> {
     fn to_context(self, ctx: &Context) -> Result<()> {
         debug!("pushing class");
         unsafe {
-            duk::duk_push_c_function(ctx.ptr(), Some(class_ctor), 1);
+            duk::duk_push_c_function(ctx.ptr(), Some(class_ctor), duk::DUK_VARARGS);
         };
 
-        ctx.push_object();
+        if let Some(parent) = self.parent {
+            let o = ctx.get_global_string("Object").getp::<Object>()?;
+            let proto: Object = Object::from(parent).get("prototype")?;
+            let p: Object = o.call("create", proto)?;
+            ctx.push(p);
+        } else {
+            ctx.push_object();
+        }
 
         for (name, method) in self.methods {
             match method {

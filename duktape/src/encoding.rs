@@ -1,7 +1,8 @@
 use super::context::Context;
 use super::error::{ErrorKind, Result};
 use duktape_sys;
-use std::ffi::{CStr, CString};
+use std::ffi::{c_void, CStr, CString};
+use std::mem;
 
 pub trait Serialize {
     fn to_context(self, ctx: &Context) -> Result<()>;
@@ -84,6 +85,13 @@ impl<'de> Deserialize<'de> for bool {
 }
 
 impl Serialize for () {
+    fn to_context(self, context: &Context) -> Result<()> {
+        unsafe { duktape_sys::duk_push_undefined(context.inner) };
+        Ok(())
+    }
+}
+
+impl Serialize for &() {
     fn to_context(self, context: &Context) -> Result<()> {
         unsafe { duktape_sys::duk_push_undefined(context.inner) };
         Ok(())
@@ -176,6 +184,32 @@ impl<'a, T: Serialize> Serialize for Vec<T> {
             i += 1;
         }
 
+        Ok(())
+    }
+}
+
+// impl<'a, u8> Serialize for Vec<u8> {
+//     fn to_context(self, ctx: &Context) -> Result<()> {
+//         let mut buffer = unsafe { duktape_sys::duk_push_fixed_buffer(ctx.inner, self.len()) };
+//         mem::replace(&mut buffer, self.as_ptr() as *mut c_void);
+//         Ok(())
+//     }
+// }
+
+impl Serialize for &[i8] {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        let mut buffer = unsafe { duktape_sys::duk_push_fixed_buffer(ctx.inner, self.len()) };
+        println!("{:?}", ctx);
+        mem::replace(&mut buffer, self.as_ptr() as *mut c_void);
+        Ok(())
+    }
+}
+
+impl Serialize for &[u8] {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        let mut buffer = unsafe { duktape_sys::duk_push_fixed_buffer(ctx.inner, self.len()) };
+        println!("{:?}", ctx);
+        mem::replace(&mut buffer, self.as_ptr() as *mut c_void);
         Ok(())
     }
 }

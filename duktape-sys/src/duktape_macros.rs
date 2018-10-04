@@ -4,6 +4,8 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::ptr;
 
+pub static DUK_VARARGS: duk_int_t = -1;
+
 #[inline(always)]
 pub unsafe fn duk_create_heap_default() -> *mut duktape::duk_context {
     duktape::duk_create_heap(None, None, None, ptr::null_mut(), None)
@@ -282,10 +284,19 @@ pub unsafe fn duk_pcompile_lstring_filename(
     duktape::duk_compile_raw(ctx, buf, len, 1 | flags | DUK_COMPILE_NOSOURCE)
 }
 
+#[inline(always)]
 pub unsafe fn duk_dump_context_stdout(ctx: *mut duktape::duk_context) {
     duk_push_context_dump(ctx);
     let ostr = duk_get_string(ctx, -1);
     let s = CStr::from_ptr(ostr).to_str().unwrap().to_string();
     duk_pop(ctx);
     println!("{}", s);
+}
+
+#[inline(always)]
+pub unsafe fn duk_push_fixed_buffer(
+    ctx: *mut duktape::duk_context,
+    size: usize,
+) -> *mut ::std::os::raw::c_void {
+    duk_push_buffer_raw(ctx, size, 0)
 }

@@ -5,7 +5,7 @@ use super::error::Result;
 use super::reference::Reference;
 
 pub struct Function<'a> {
-    refer: Reference<'a>,
+    pub(crate) refer: Reference<'a>,
 }
 
 impl<'a> Function<'a> {
@@ -34,5 +34,14 @@ impl<'a> Deserialize<'a> for Function<'a> {
     fn from_context(ctx: &'a Context, index: Idx) -> Result<Self> {
         let re = Reference::new(ctx, index);
         Ok(Function::new(re))
+    }
+}
+
+impl<'a> Clone for Function<'a> {
+    fn clone(&self) -> Self {
+        self.refer.push();
+        let r = Function::new(self.refer.clone());
+        self.refer.ctx.pop(1);
+        r
     }
 }

@@ -11,12 +11,12 @@ lazy_static! {
 }
 
 struct Loader {
-    protocol: String,
+    extension: String,
     loader: Box<dyn ModuleLoader>,
 }
 
 struct Resolver {
-    extention: String,
+    protocol: String,
     resolver: Box<dyn ModuleResolver>,
 }
 
@@ -40,7 +40,19 @@ impl RequireBuilder {
         }
     }
 
-    pub fn loader(&mut self, loader: Box<dyn ModuleLoader>) -> &mut Self {
+    // pub fn loader(&mut self, loader: Box<dyn ModuleLoader>) -> &mut Self {
+    //     self
+    // }
+
+    pub fn resolver<T: AsRef<str>>(
+        &mut self,
+        protocol: T,
+        resolver: Box<dyn ModuleResolver>,
+    ) -> &mut Self {
+        self.resolvers.push(Resolver {
+            protocol: protocol.as_ref().to_owned(),
+            resolver: resolver,
+        });
         self
     }
 
@@ -98,7 +110,7 @@ impl Require {
 
         let protocol = caps.get(1).unwrap().as_str();
         let resolver = match self
-            .loaders
+            .resolvers
             .iter()
             .find(|m| m.protocol.as_str() == protocol)
         {
