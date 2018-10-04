@@ -4,5 +4,6 @@ members = [
     "duktape-sys",
     "duktape",
     "duktape-cjs",
+    "duktape-stdlib",
     "duk"
 ]

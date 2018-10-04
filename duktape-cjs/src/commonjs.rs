@@ -44,7 +44,10 @@ impl RequireBuilder {
         self
     }
 
-    pub fn module(&mut self, id: &str, module: Box<dyn Callable>) -> &mut Self {
+    pub fn module<T: 'static>(&mut self, id: &str, module: T) -> &mut Self
+    where
+        T: Callable,
+    {
         if self
             .modules
             .iter()
@@ -54,9 +57,11 @@ impl RequireBuilder {
             return self;
         }
 
+        let boxed = Box::new(module);
+
         self.modules.push(Module {
             name: id.to_string(),
-            module: module,
+            module: boxed,
         });
 
         self
@@ -102,7 +107,8 @@ impl Require {
                 return Err(ErrorKind::TypeError(format!(
                     "could not find resolver for protocol: '{}'",
                     protocol
-                )).into())
+                ))
+                .into())
             }
         };
         Ok(())
@@ -118,8 +124,10 @@ impl Require {
         let found = found.unwrap();
 
         self.push_module(ctx, id);
+
         let top = ctx.top();
         found.module.call(ctx)?;
+
         if ctx.top() > top {
             ctx.put_prop_string(-2, "exports");
         }

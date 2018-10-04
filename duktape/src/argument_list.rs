@@ -20,6 +20,13 @@ impl<'a> ArgumentList for &'a str {
     }
 }
 
+impl ArgumentList for () {
+    fn len(&self) -> i32 {
+        0
+    }
+    fn push(self, ctx: &Context) {}
+}
+
 impl<T1: 'static + Serialize, T2: 'static + Serialize> ArgumentList for (T1, T2)
 where
     &T1: Serialize,

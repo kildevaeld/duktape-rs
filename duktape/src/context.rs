@@ -25,6 +25,10 @@ pub enum Type {
     Function,
 }
 
+pub trait Constructable<'ctor>: Sized {
+    fn construct(duk: &'ctor Context) -> Result<Self>;
+}
+
 macro_rules! handle_error {
     ($ret: expr, $ctx: expr) => {
         if ($ret) != duk::DUK_EXEC_SUCCESS as i32 {
@@ -146,11 +150,17 @@ impl Context {
         self
     }
 
+    pub fn create<'a, T: Constructable<'a>>(&'a self) -> Result<T> {
+        T::construct(self)
+    }
+
     push_impl!(push_object, duk_push_object);
     push_impl!(push_bare_object, duk_push_bare_object);
     push_impl!(push_array, duk_push_array);
     push_impl!(push_global_object, duk_push_global_object);
     push_impl!(push_global_stash, duk_push_global_stash);
+    push_impl!(push_this, duk_push_this);
+    push_impl!(push_current_function, duk_push_current_function);
 
     pub fn dup(&self, idx: Idx) -> &Self {
         unsafe { duk::duk_dup(self.inner, idx) };
@@ -303,8 +313,8 @@ impl Context {
 
     check_impl!(is_array, duk_is_array);
 
-    pub fn is(&self, t: Type) -> bool {
-        self.get_type(-1) == t
+    pub fn is(&self, t: Type, idx: Idx) -> bool {
+        self.get_type(idx) == t
     }
 
     pub fn get_type(&self, index: Idx) -> Type {
@@ -342,6 +352,12 @@ impl Context {
 
     pub fn call_prop(&self, idx: Idx, args: i32) -> Result<()> {
         let ret = unsafe { duk::duk_pcall_prop(self.inner, idx, args) };
+        handle_error!(ret, self);
+        Ok(())
+    }
+
+    pub fn construct(&self, args: i32) -> Result<()> {
+        let ret = unsafe { duk::duk_pnew(self.inner, args) };
         handle_error!(ret, self);
         Ok(())
     }

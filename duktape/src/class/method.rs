@@ -23,16 +23,9 @@ impl Instance {
     }
 }
 
-impl Drop for Instance {
-    fn drop(&mut self) {
-        println!("{}", "drop instance");
-        drop(&mut self.types);
-    }
-}
-
 static KEY: &'static [u8] = b"\xFFmethod_ptr";
 pub static DATA_KEY: &'static [u8] = b"\xFFdata_ptr";
-pub static CTOR_KEY: &'static [u8] = b"ctor_ptr";
+pub static CTOR_KEY: &'static [u8] = b"\xFFctor_ptr";
 
 pub trait Method {
     fn call(&self, ctx: &mut Context, instance: &mut Instance) -> Result<i32>;

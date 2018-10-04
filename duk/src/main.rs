@@ -1,5 +1,7 @@
 extern crate duktape;
 extern crate duktape_cjs;
+extern crate duktape_stdlib;
+
 use duktape::prelude::*;
 use std::io::{self, Write};
 use std::{env, fs};
@@ -68,10 +70,7 @@ fn main() -> duktape::error::Result<()> {
     let mut ctx = duktape::Context::new().unwrap();
 
     let mut require = duktape_cjs::RequireBuilder::new();
-
-    let m: Box<dyn duktape::Callable> = Box::new(Test {});
-
-    require.module("io", m);
+    duktape_stdlib::init(&mut require);
 
     duktape_cjs::register(&mut ctx, require);
 

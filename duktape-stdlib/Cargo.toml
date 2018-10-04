@@ -1,5 +1,5 @@
 [package]
-name = "duk"
+name = "duktape-stdlib"
 version = "0.1.0"
 authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
@@ -7,7 +7,3 @@ edition = "2018"
 [dependencies]
 duktape = { path = "../duktape" }
 duktape-cjs = { path = "../duktape-cjs" }
-duktape-stdlib = {path = "../duktape-stdlib" }
-log = "0.4"
-env_logger = "0.5.13"
-

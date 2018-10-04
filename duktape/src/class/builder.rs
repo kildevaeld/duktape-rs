@@ -90,7 +90,7 @@ unsafe extern "C" fn class_ctor(ctx: *mut duk::duk_context) -> duk::duk_ret_t {
     duk::duk_push_current_function(ctx);
 
     let mut instance = Box::new(Instance::new());
-    duk::duk_dump_context_stdout(ctx);
+    // duk::duk_dump_context_stdout(ctx);
     if duk::duk_has_prop_lstring(ctx, -1, CTOR_KEY.as_ptr() as *const i8, CTOR_KEY.len()) == 1 {
         debug!("found custom class constructor");
         duk::duk_get_prop_lstring(ctx, -1, CTOR_KEY.as_ptr() as *const i8, CTOR_KEY.len());

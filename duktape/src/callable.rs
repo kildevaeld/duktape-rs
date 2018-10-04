@@ -89,3 +89,12 @@ impl Callable for Wrapped {
 pub fn cb(argc: i32, cb: Box<dyn Fn(&mut Context) -> Result<i32>>) -> Box<dyn Callable> {
     Box::new(Wrapped { cb: cb, a: argc })
 }
+
+impl<T> Callable for T
+where
+    T: Fn(&mut Context) -> Result<i32>,
+{
+    fn call(&self, ctx: &mut Context) -> Result<i32> {
+        self(ctx)
+    }
+}
