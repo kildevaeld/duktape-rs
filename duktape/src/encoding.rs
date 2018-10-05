@@ -188,14 +188,6 @@ impl<'a, T: Serialize> Serialize for Vec<T> {
     }
 }
 
-// impl<'a, u8> Serialize for Vec<u8> {
-//     fn to_context(self, ctx: &Context) -> Result<()> {
-//         let mut buffer = unsafe { duktape_sys::duk_push_fixed_buffer(ctx.inner, self.len()) };
-//         mem::replace(&mut buffer, self.as_ptr() as *mut c_void);
-//         Ok(())
-//     }
-// }
-
 impl Serialize for &[i8] {
     fn to_context(self, ctx: &Context) -> Result<()> {
         let mut buffer = unsafe { duktape_sys::duk_push_fixed_buffer(ctx.inner, self.len()) };

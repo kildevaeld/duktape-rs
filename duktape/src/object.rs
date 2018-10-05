@@ -1,5 +1,5 @@
 use super::argument_list::ArgumentList;
-use super::context::{Constructable, Context, Idx};
+use super::context::{Constructable, Context, Idx, Type};
 use super::encoding::{Deserialize, Serialize};
 use super::error::{ErrorKind, Result};
 use super::function::Function;
@@ -82,18 +82,6 @@ impl<'a> Object<'a> {
         }
 
         self.refer.ctx.remove(-2).getp::<Object>()
-
-        //self.refer.push();
-        //let idx = self.refer.ctx.normalize_index(-1);
-        //self.refer.ctx.push(fn_name.as_ref());
-        // let len = args.len();
-        // args.push(self.refer.ctx);
-        // if let Err(e) = self.refer.ctx.call_prop(idx, len) {
-        //     self.refer.ctx.pop(1);
-        //     return Err(e);
-        // }
-        // self.refer.ctx.remove(-2);
-        // self.refer.ctx.getp()
     }
 }
 
@@ -144,6 +132,15 @@ impl<'a> Constructable<'a> for Object<'a> {
 impl<'a> From<Function<'a>> for Object<'a> {
     fn from(func: Function<'a>) -> Self {
         Object::new(func.refer.clone())
+    }
+}
+
+impl<'a> From<Object<'a>> for Result<Function<'a>> {
+    fn from(func: Object<'a>) -> Self {
+        if func.as_ref().is(Type::Function) {
+            return Ok(Function::new(func.refer.clone()));
+        }
+        Err(ErrorKind::TypeError("could not interpret object as function".to_owned()).into())
     }
 }
 

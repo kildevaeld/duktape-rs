@@ -5,10 +5,12 @@ use duktape_sys::{self as duk, duk_context};
 use std::ffi::CStr;
 use std::fmt;
 use std::ptr;
+use typemap::TypeMap;
 
 pub struct Context {
     pub(crate) inner: *mut duk_context,
     managed: bool,
+    data: *mut TypeMap,
 }
 
 pub type Idx = i32;
@@ -93,22 +95,42 @@ impl Context {
         Ok(Context {
             inner: d,
             managed: true,
+            data: unsafe { privates::get_data(d) },
         })
     }
 
     /// Create a new context, from a given duktape context
     /// The duktape context will **not** be managed.
-    pub fn with(duk: *mut duk_context) -> Context {
+    pub(crate) fn with(duk: *mut duk_context) -> Context {
         unsafe { privates::init_refs(duk) };
         unsafe { privates::init_data(duk) };
         Context {
             inner: duk,
             managed: false,
+            data: unsafe { privates::get_data(duk) },
         }
     }
 
     pub fn ptr(&self) -> *mut duk_context {
         self.inner
+    }
+
+    pub fn data<'a>(&'a self) -> Result<&'a TypeMap> {
+        unsafe {
+            if self.data.is_null() {
+                return Err(ErrorKind::InsufficientMemory.into());
+            }
+            Ok(&*self.data)
+        }
+    }
+
+    pub fn data_mut<'a>(&'a self) -> Result<&'a mut TypeMap> {
+        unsafe {
+            if self.data.is_null() {
+                return Err(ErrorKind::InsufficientMemory.into());
+            }
+            Ok(&mut *self.data)
+        }
     }
 
     /// Evaluate a script
@@ -437,6 +459,8 @@ impl Drop for Context {
                 duk::duk_destroy_heap(self.inner);
             };
         }
+
+        self.data = ptr::null_mut();
         self.inner = ptr::null_mut();
     }
 }

@@ -16,7 +16,7 @@ pub trait Callable {
     }
 
     /// Call the fn with the context which the callable was registered
-    fn call(&self, ctx: &mut Context) -> Result<i32>;
+    fn call(&self, ctx: &Context) -> Result<i32>;
 }
 
 unsafe extern "C" fn call(ctx: *mut duk_context) -> duk_ret_t {
@@ -73,7 +73,7 @@ impl Serialize for Box<dyn Callable> {
 
 /* Closure support */
 struct Wrapped {
-    cb: Box<dyn Fn(&mut Context) -> Result<i32>>,
+    cb: Box<dyn Fn(&Context) -> Result<i32>>,
     a: i32,
 }
 
@@ -81,20 +81,20 @@ impl Callable for Wrapped {
     fn argc(&self) -> i32 {
         self.a
     }
-    fn call(&self, ctx: &mut Context) -> Result<i32> {
+    fn call(&self, ctx: &Context) -> Result<i32> {
         (self.cb)(ctx)
     }
 }
 
-pub fn cb(argc: i32, cb: Box<dyn Fn(&mut Context) -> Result<i32>>) -> Box<dyn Callable> {
+pub fn cb(argc: i32, cb: Box<dyn Fn(&Context) -> Result<i32>>) -> Box<dyn Callable> {
     Box::new(Wrapped { cb: cb, a: argc })
 }
 
 impl<T> Callable for T
 where
-    T: Fn(&mut Context) -> Result<i32>,
+    T: Fn(&Context) -> Result<i32>,
 {
-    fn call(&self, ctx: &mut Context) -> Result<i32> {
+    fn call(&self, ctx: &Context) -> Result<i32> {
         self(ctx)
     }
 }

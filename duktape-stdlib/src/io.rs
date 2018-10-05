@@ -38,7 +38,7 @@ pub fn init_writer<'a>() -> duktape::class::Builder<'a> {
                 Some(w) => w,
                 None => return Ok(0),
             };
-            writer.flush();
+            writer.flush().unwrap();
             ctx.push_this();
             Ok(1)
         });
@@ -48,7 +48,7 @@ pub fn init_writer<'a>() -> duktape::class::Builder<'a> {
 pub fn init_reader<'a>() -> duktape::class::Builder<'a> {
     let mut reader = duktape::class::build();
     reader.method("read", 1, |ctx, this| {
-        let mut reader = match this.data_mut().get_mut::<ReaderKey>() {
+        let reader = match this.data_mut().get_mut::<ReaderKey>() {
             Some(r) => r,
             None => return Ok(0),
         };
@@ -61,7 +61,7 @@ pub fn init_reader<'a>() -> duktape::class::Builder<'a> {
     reader
 }
 
-pub fn init_io(ctx: &mut Context) -> Result<i32> {
+pub fn init_io(ctx: &Context) -> Result<i32> {
     let module = ctx.create::<Object>()?;
 
     module.set("Writer", init_writer());

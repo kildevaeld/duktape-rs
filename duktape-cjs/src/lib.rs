@@ -6,100 +6,53 @@ extern crate lazy_static;
 extern crate duktape_sys;
 extern crate regex;
 
-//mod class_builder;
-//pub mod class;
 mod commonjs;
 pub mod error;
+mod eval;
+mod file_resolver;
+mod internal;
 mod types;
 
-//pub use self::class::*;
-pub use self::commonjs::RequireBuilder;
-pub use self::types::*;
+pub use self::commonjs::{CommonJS, RequireBuilder};
+pub use self::eval::*;
+pub use self::types::{ModuleLoader, ModuleResolver};
 
-use duktape::types::{ArgumentList, Function, Object, Reference};
-use duktape::Deserialize;
-use std::fs;
-use std::path::Path;
-use std::str;
+pub mod resolvers {
+    pub use super::file_resolver::*;
+}
 
-pub fn register(ctx: &mut duktape::Context, builder: RequireBuilder) -> bool {
+pub fn register(
+    ctx: &mut duktape::Context,
+    mut builder: RequireBuilder,
+) -> duktape::error::Result<bool> {
     ctx.push_global_stash();
-    if ctx.has_prop_string(-1, KEY) {
-        return false;
+    if ctx.has_prop_string(-1, types::KEY) {
+        return Ok(false);
     }
 
     ctx.push_bare_object()
         .push_bare_object()
         .put_prop_string(-2, "cache")
-        .put_prop_string(-2, KEY);
+        .put_prop_string(-2, types::KEY);
 
     ctx.pop(1);
+
+    builder.resolver(
+        "file",
+        Box::new(file_resolver::FileResolver {}) as Box<dyn ModuleResolver>,
+    );
+    //builder.loader(extension: &str, loader: Box<dyn ModuleLoader>)
+
+    ctx.data_mut()?.insert::<CommonJS>(builder.build());
+
+    let commonjs = ctx.data()?.get::<CommonJS>().unwrap();
 
     ctx.push_global_object()
-        .push(builder.build())
-        .put_prop_string(-2, "require");
+        .push(commonjs.build_require(ctx, "")?)
+        .put_prop_string(-2, "require")
+        .pop(1);
 
-    ctx.pop(1);
-
-    true
-}
-
-pub fn eval_main<'a, T: AsRef<Path>>(
-    ctx: &'a mut duktape::Context,
-    path: T,
-) -> error::Result<Object> {
-    let path = path.as_ref();
-    let content = fs::read(path)?;
-    eval_main_script(ctx, path, content)
-}
-
-pub fn eval_main_script<'a, T: AsRef<Path>, S: AsRef<[u8]>>(
-    ctx: &'a mut duktape::Context,
-    path: T,
-    script: S,
-) -> error::Result<Object> {
-    let path = path.as_ref();
-    let parent = path.parent().unwrap();
-
-    let mut module = ctx.create::<Object>()?;
-    module
-        .set("fileName", path.clone().to_str())
-        .set("dirName", parent.to_str())
-        .set("id", path.to_str())
-        .set("loaded", false)
-        .set(
-            "require",
-            ctx.get_global_string("require").getp::<Reference>()?,
-        )
-        .set("exports", ctx.create::<Object>()?);
-
-    eval_module(ctx, script.as_ref(), &mut module)?;
-
-    Ok(module)
-}
-
-fn eval_module<'a>(
-    ctx: &'a duktape::Context,
-    script: &[u8],
-    object: &mut duktape::types::Object,
-) -> error::Result<()> {
-    let s = str::from_utf8(script)?;
-
-    ctx.push("(function(exports,require,module,__filename,__dirname) {")
-        .push(s)
-        .push("\n})")
-        .concat(3)?;
-
-    ctx.push(object.get::<_, Reference>("fileName")?);
-    ctx.compile(duktape_sys::DUK_COMPILE_EVAL)?.call(0)?;
-
-    Ok(ctx.getp::<Function>()?.call::<_, ()>((
-        object.get::<_, Reference>("exports")?,
-        object.get::<_, Reference>("require")?,
-        object.clone(),
-        object.get::<_, Reference>("fileName")?,
-        object.get::<_, Reference>("dirName")?,
-    ))?)
+    Ok(true)
 }
 
 #[cfg(test)]

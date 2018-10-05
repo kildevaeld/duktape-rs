@@ -28,7 +28,7 @@ impl<'a> Builder<'a> {
 
     pub fn method<T: 'static>(&mut self, name: &str, argc: i32, method: T) -> &mut Self
     where
-        T: Fn(&mut Context, &mut Instance) -> Result<i32>,
+        T: Fn(&Context, &mut Instance) -> Result<i32>,
     {
         let wrapped = Wrapped(method, argc);
         let b: Box<dyn Method> = Box::new(wrapped);
@@ -38,7 +38,7 @@ impl<'a> Builder<'a> {
 
     pub fn constructor<T: 'static>(&mut self, argc: i32, ctor: T) -> &mut Self
     where
-        T: Fn(&mut Context, &mut Instance) -> Result<i32>,
+        T: Fn(&Context, &mut Instance) -> Result<i32>,
     {
         let wrapped = Wrapped(ctor, argc);
         let b: Box<dyn Method> = Box::new(wrapped);

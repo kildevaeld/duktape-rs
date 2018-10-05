@@ -1,6 +1,7 @@
 var io = require('io'),
     fs = require('fs');
 
+require('./test');
 
 var file = new fs.File("./test_file.txt", 'wr+');
 

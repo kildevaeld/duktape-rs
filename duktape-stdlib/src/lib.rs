@@ -8,10 +8,10 @@ use duktape::prelude::*;
 
 pub fn init(builder: &mut duktape_cjs::RequireBuilder) {
     builder
-        .module("io", |ctx: &mut Context| {
+        .module("io", |ctx: &Context| {
             return io::init_io(ctx);
         })
-        .module("fs", |ctx: &mut Context| {
+        .module("fs", |ctx: &Context| {
             return fs::init_fs(ctx);
         });
 }

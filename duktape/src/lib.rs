@@ -34,6 +34,7 @@ pub mod types {
 }
 
 pub mod prelude {
+    pub use super::callable::{Callable, CallableBoxed};
     pub use super::context::*;
     pub use super::error::*;
     pub use super::types::*;

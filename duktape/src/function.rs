@@ -1,5 +1,6 @@
 use super::argument_list::ArgumentList;
 use super::context::{Context, Idx};
+use super::duktape_sys as duk;
 use super::encoding::{Deserialize, Serialize};
 use super::error::Result;
 use super::reference::Reference;
@@ -21,9 +22,30 @@ impl<'a> Function<'a> {
         let ret = self.refer.ctx.getp()?;
         Ok(ret)
     }
+
+    pub fn set_name<T: AsRef<str>>(&mut self, name: T) -> &mut Self {
+        self.refer.push();
+        self.refer.ctx.push("name").push(name.as_ref());
+        unsafe {
+            duk::duk_def_prop(
+                self.refer.ctx.inner,
+                -3,
+                duk::DUK_DEFPROP_HAVE_VALUE | duk::DUK_DEFPROP_FORCE,
+            );
+        }
+        self.refer.ctx.pop(1);
+        self
+    }
 }
 
 impl<'a> Serialize for Function<'a> {
+    fn to_context(self, _ctx: &Context) -> Result<()> {
+        self.refer.push();
+        Ok(())
+    }
+}
+
+impl<'a> Serialize for &'a Function<'a> {
     fn to_context(self, _ctx: &Context) -> Result<()> {
         self.refer.push();
         Ok(())

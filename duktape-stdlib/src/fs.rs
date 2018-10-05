@@ -1,8 +1,7 @@
 use duktape;
 use duktape::prelude::*;
-use std::convert;
 use std::fs::{File, OpenOptions};
-use std::io::{self, BufRead, Read, Stdin, Write};
+use std::io::{Read, Write};
 
 struct FileKey;
 
@@ -21,7 +20,7 @@ fn get_file_options(input: &str) -> OpenOptions {
         "wr+" | "rw+" => o.write(true).read(true).create(true),
         _ => o.read(true),
     };
-    println!("read {}", input);
+
     o
 }
 
@@ -38,7 +37,7 @@ pub fn init_file<'a>() -> duktape::class::Builder<'a> {
             o.read(true);
             options = o;
         }
-        println!("{:?}", options);
+
         let file = options.open(path).unwrap();
         this.data_mut().insert::<FileKey>(file);
 
@@ -74,7 +73,7 @@ pub fn init_file<'a>() -> duktape::class::Builder<'a> {
             Some(w) => w,
             None => return Ok(0),
         };
-        writer.flush();
+        writer.flush().unwrap();
         ctx.push_this();
         Ok(1)
     })
@@ -92,14 +91,14 @@ pub fn init_file<'a>() -> duktape::class::Builder<'a> {
     file
 }
 
-pub fn init_fs(ctx: &mut Context) -> Result<i32> {
+pub fn init_fs(ctx: &Context) -> Result<i32> {
     let module = ctx.create::<Object>()?;
 
     module.set("File", init_file());
 
     module
-        .set("mkdir", duktape::cb(1, Box::new(|ctx| Ok(0))))
-        .set("mkdirAll", duktape::cb(1, Box::new(|ctx| Ok(0))));
+        .set("mkdir", duktape::cb(1, Box::new(|_ctx| Ok(0))))
+        .set("mkdirAll", duktape::cb(1, Box::new(|_ctx| Ok(0))));
 
     ctx.push(module);
     Ok(1)

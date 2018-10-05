@@ -11,3 +11,4 @@ pub trait ModuleLoader {
 }
 
 pub static KEY: &'static [u8] = b"commonjs";
+pub static MODULE_ID_KEY: &'static [u8] = b"\xFFmoduleId";

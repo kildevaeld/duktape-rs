@@ -15,7 +15,7 @@ fn main() -> duktape_cjs::error::Result<()> {
     let mut require = duktape_cjs::RequireBuilder::new();
     duktape_stdlib::init(&mut require);
 
-    duktape_cjs::register(&mut ctx, require);
+    duktape_cjs::register(&mut ctx, require)?;
 
     let args = env::args();
 
@@ -26,7 +26,9 @@ fn main() -> duktape_cjs::error::Result<()> {
 
     let path = &args.collect::<Vec<String>>()[1];
     let data = fs::read(path).unwrap();
+    ctx.push_global_stash();
 
+    ctx.pop(1);
     let module = duktape_cjs::eval_main_script(&mut ctx, path, data)?;
     println!("{}", module);
     Ok(())
