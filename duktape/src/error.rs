@@ -17,6 +17,11 @@ error_chain!{
             description("ReferenceError")
             display("Reference error: {}", message)
         }
+
+        Error(message: String) {
+            description("Error")
+            display("Error: {}", message)
+        }
     }
 
 

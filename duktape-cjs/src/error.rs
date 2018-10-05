@@ -10,4 +10,11 @@ error_chain!{
     links {
         Duktape(error::Error, error::ErrorKind);
     }
+
+    errors {
+        Resolve(path:String) {
+            description("ResolveError")
+            display("could not resolve: '{}'",path)
+        }
+    }
 }

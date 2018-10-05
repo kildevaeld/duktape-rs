@@ -1,6 +1,7 @@
 use super::types::{ModuleLoader, ModuleResolver};
 use super::types::{KEY, MODULE_ID_KEY};
 // use duktape::{error::ErrorKind, error::Result, Callable, Context};
+use super::internal;
 use duktape::prelude::*;
 use duktape::Key;
 use regex::Regex;
@@ -34,6 +35,13 @@ impl CommonJS {
             }
             Err(e) => Err(e),
         }
+    }
+
+    pub fn extensions(&self) -> Vec<String> {
+        self.loaders
+            .iter()
+            .map(|m| m.extension.clone())
+            .collect::<Vec<_>>()
     }
 }
 
@@ -146,10 +154,11 @@ impl Require {
             .put_prop_string(-2, "exports");
     }
 
-    fn load_module(&self, id: &str, ctx: &Context, repo: &CommonJS) -> Result<()> {
+    fn load_module<'a>(&self, id: &str, ctx: &'a Context, repo: &CommonJS) -> Result<Object<'a>> {
         let caps = PROTOCOL_RE.captures(id).unwrap();
 
         let protocol = caps.get(1).unwrap().as_str();
+        let idr = caps.get(2).unwrap().as_str();
         let resolver = match repo
             .resolvers
             .iter()
@@ -168,16 +177,53 @@ impl Require {
         let o: Object = ctx.push_current_function().getp()?;
         let parent = o.get::<_, String>(MODULE_ID_KEY)?;
 
-        let id = resolver.resolver.resolve(id, &parent).unwrap();
+        let id = match resolver.resolver.resolve(idr, &parent, &repo.extensions()) {
+            Ok(id) => id,
+            Err(e) => return Err(ErrorKind::TypeError(format!("{}", e)).into()),
+        };
 
-        if self.has_cache(ctx, &id) {
-            return self.get_cache(ctx, &id);
+        // if self.has_cache(ctx, &id) {
+        //     return self.get_cache(ctx, &id);
+        // }
+
+        let path = Path::new(&id);
+
+        let module = match internal::push_module_object(ctx, &path, false) {
+            Ok(id) => id,
+            Err(e) => return Err(ErrorKind::Error(format!("{}", e)).into()),
+        };
+
+        if path.extension().is_none() {
+            bail!(ErrorKind::TypeError(format!(
+                "could not infer extension for path {}",
+                id
+            )));
         }
 
-        Ok(())
+        let ext = path.extension().unwrap();
+
+        let loader = match repo.loaders.iter().find(|m| m.extension.as_str() == ext) {
+            Some(loader) => loader,
+            None => bail!(ErrorKind::Error(format!("no loader for: {:?}", ext))),
+        };
+
+        let content = match resolver.resolver.read(&id) {
+            Err(e) => bail!(ErrorKind::Error(format!("{}", e))),
+            Ok(m) => m,
+        };
+
+        match loader.loader.load(ctx, &module, &content) {
+            Err(e) => bail!(ErrorKind::Error(format!("{}", e))),
+            Ok(_) => Ok(module),
+        }
     }
 
-    fn load_builtin_module(&self, id: &str, ctx: &Context, repo: &CommonJS) -> Result<()> {
+    fn load_builtin_module<'a>(
+        &self,
+        id: &str,
+        ctx: &'a Context,
+        repo: &CommonJS,
+    ) -> Result<Object<'a>> {
         // Find buildin
         let found = repo.modules.iter().find(|m| m.name == id);
         if found.is_none() {
@@ -187,15 +233,17 @@ impl Require {
         let found = found.unwrap();
 
         self.push_module(ctx, id);
+        let module = internal::push_module_object(ctx, "", false).unwrap();
 
         let top = ctx.top();
         found.module.call(ctx)?;
 
         if ctx.top() > top {
             ctx.put_prop_string(-2, "exports");
+            module.set("exports", ctx.get::<Reference>(-1)?);
         }
 
-        Ok(())
+        Ok(module)
     }
 
     fn has_cache(&self, ctx: &Context, id: &str) -> bool {
@@ -207,19 +255,19 @@ impl Require {
         ret
     }
 
-    fn get_cache(&self, ctx: &Context, id: &str) -> Result<()> {
-        ctx.push_global_stash()
-            .get_prop_string(-1, KEY)
-            .get_prop_string(-1, "cache");
+    // fn get_cache(&self, ctx: &Context, id: &str) -> Result<Object> {
+    //     ctx.push_global_stash()
+    //         .get_prop_string(-1, KEY)
+    //         .get_prop_string(-1, "cache");
 
-        if !ctx.has_prop_string(-1, id) {
-            ctx.pop(3);
-        } else {
-            ctx.get_prop_string(-1, id);
-        }
+    //     if !ctx.has_prop_string(-1, id) {
+    //         ctx.pop(3);
+    //     } else {
+    //         ctx.get_prop_string(-1, id);
+    //     }
 
-        Ok(())
-    }
+    //     ctx.getp()
+    // }
 
     fn set_cache(&self, ctx: &Context, id: &str, index: i32) -> Result<()> {
         Ok(())
@@ -244,34 +292,25 @@ impl Callable for Require {
 
         let common = ctx.data()?.get::<CommonJS>().unwrap();
 
-        if common.modules.iter().find(|m| m.name == id).is_some() {
-            if self.has_cache(ctx, &id) {
-                self.get_cache(ctx, &id)?;
-            } else {
-                self.load_builtin_module(&id, ctx, common)?;
-            }
+        let module = if common.modules.iter().find(|m| m.name == id).is_some() {
+            self.load_builtin_module(&id, ctx, common)?
         } else {
             if FILE_RE.is_match(&id) {
                 id = format!("file://{}", id);
             }
-
             if !PROTOCOL_RE.is_match(&id) {
                 return Err(ErrorKind::TypeError(format!("invalid require id: {}", id)).into());
             }
-            if self.has_cache(ctx, &id) {
-                self.get_cache(ctx, &id)?;
-            } else {
-                self.load_module(&id, ctx, &common)?;
-            }
-        }
+            self.load_module(&id, ctx, &common)?
+        };
 
-        if ctx.top() == 0 {
-            return Err(ErrorKind::TypeError("module return invalid type".to_string()).into());
-        }
+        // if ctx.top() == 0 {
+        //     return Err(ErrorKind::TypeError("module return invalid type".to_string()).into());
+        // }
 
-        id = ctx.get::<Object>(-1)?.get::<_, String>("id")?;
+        //id = ctx.get::<Object>(-1)?.get::<_, String>("id")?;
 
-        self.set_cache(ctx, &id, -1)?;
+        //.set_cache(ctx, &id, -1)?;
 
         ctx.get_prop_string(-1, "exports");
 

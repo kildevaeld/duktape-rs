@@ -11,7 +11,9 @@ pub mod error;
 mod eval;
 mod file_resolver;
 mod internal;
+pub mod loaders;
 mod types;
+mod utils;
 
 pub use self::commonjs::{CommonJS, RequireBuilder};
 pub use self::eval::*;
@@ -41,7 +43,10 @@ pub fn register(
         "file",
         Box::new(file_resolver::FileResolver {}) as Box<dyn ModuleResolver>,
     );
-    //builder.loader(extension: &str, loader: Box<dyn ModuleLoader>)
+
+    builder
+        .loader("js", loaders::javascript())
+        .loader("json", loaders::json());
 
     ctx.data_mut()?.insert::<CommonJS>(builder.build());
 
