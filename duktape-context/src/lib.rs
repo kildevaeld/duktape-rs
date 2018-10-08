@@ -4,13 +4,14 @@ extern crate error_chain;
 extern crate typemap;
 
 mod callable;
-mod class;
+pub mod class;
 mod context;
 pub mod error;
 mod privates;
+pub mod types;
 
 pub use self::callable::Callable;
-pub use self::class::*;
+//pub use self::class;
 pub use self::context::*;
 
 #[cfg(test)]

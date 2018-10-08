@@ -244,13 +244,13 @@ impl Context {
         self
     }
 
-    pub fn push_int<T: Into<i32>>(&self, value: T) -> &Self {
-        unsafe { duk::duk_push_int(self.inner, value.into()) };
+    pub fn push_int(&self, value: i32) -> &Self {
+        unsafe { duk::duk_push_int(self.inner, value) };
         self
     }
 
-    pub fn push_uint<T: Into<u32>>(&self, value: T) -> &Self {
-        unsafe { duk::duk_push_uint(self.inner, value.into()) };
+    pub fn push_uint(&self, value: u32) -> &Self {
+        unsafe { duk::duk_push_uint(self.inner, value) };
         self
     }
 
@@ -284,28 +284,28 @@ impl Context {
     push_impl!(push_this, duk_push_this);
     push_impl!(push_current_function, duk_push_current_function);
 
-    pub fn get_number<T: From<f64>>(&self, idx: Idx) -> Result<T> {
+    pub fn get_number(&self, idx: Idx) -> Result<f64> {
         if !self.is_number(idx) {
             bail!(ErrorKind::TypeError(format!("number")));
         }
         let ret = unsafe { duk::duk_get_number(self.inner, idx) };
-        Ok(T::from(ret))
+        Ok(ret)
     }
 
-    pub fn get_int<T: From<i32>>(&self, idx: Idx) -> Result<T> {
+    pub fn get_int(&self, idx: Idx) -> Result<i32> {
         if !self.is_number(idx) {
             bail!(ErrorKind::TypeError(format!("number")));
         }
         let ret = unsafe { duk::duk_get_int(self.inner, idx) };
-        Ok(T::from(ret))
+        Ok(ret)
     }
 
-    pub fn get_uint<T: From<u32>>(&self, idx: Idx) -> Result<T> {
+    pub fn get_uint(&self, idx: Idx) -> Result<u32> {
         if !self.is_number(idx) {
             bail!(ErrorKind::TypeError(format!("number")));
         }
         let ret = unsafe { duk::duk_get_uint(self.inner, idx) };
-        Ok(T::from(ret))
+        Ok(ret)
     }
 
     pub fn get_boolean(&self, idx: Idx) -> Result<bool> {
@@ -620,7 +620,7 @@ pub mod tests {
         });
 
         duk.call(0).unwrap();
-        assert_eq!(duk.get_int::<i32>(-1).unwrap(), 42);
+        assert_eq!(duk.get_int(-1).unwrap(), 42);
     }
 
 }
