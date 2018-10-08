@@ -1,10 +1,5 @@
-use super::super::{
-    error::Result,
-    //types::{Function, Object},
-    Context,
-    Ref,
-};
-use super::method::{push_method, Instance, Method, Wrapped, CTOR_KEY, DATA_KEY};
+use super::super::{error::Result, Context, Ref};
+use super::method::{push_method, Instance, Method, CTOR_KEY, DATA_KEY};
 use duktape_sys as duk;
 use std::collections::HashMap;
 use std::ffi::c_void;

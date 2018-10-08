@@ -20,6 +20,19 @@ pub struct Ref<'a> {
     r: u32,
 }
 
+impl<'a> Ref<'a> {
+    pub fn get_type(&self) -> Type {
+        self.ctx.push_ref(self);
+        let ret = self.ctx.get_type(-1);
+        self.ctx.pop(1);
+        ret
+    }
+
+    pub fn is(&self, value: Type) -> bool {
+        self.get_type() == value
+    }
+}
+
 impl<'a> Drop for Ref<'a> {
     fn drop(&mut self) {
         unsafe { privates::unref(self.ctx.inner, self.r) };
@@ -112,6 +125,7 @@ impl Context {
 
         unsafe { privates::init_refs(d) };
         unsafe { privates::init_data(d) };
+
         Ok(Context {
             inner: d,
             managed: true,
@@ -130,10 +144,6 @@ impl Context {
             data: unsafe { privates::get_data(duk) },
         }
     }
-
-    // pub fn ptr(&self) -> *mut duk_context {
-    //     self.inner
-    // }
 
     pub fn data<'a>(&'a self) -> Result<&'a TypeMap> {
         unsafe {
@@ -612,25 +622,5 @@ pub mod tests {
         duk.call(0).unwrap();
         assert_eq!(duk.get_int::<i32>(-1).unwrap(), 42);
     }
-
-    //#[test]
-    // fn context_eval() {
-    //     let duk = Context::new().unwrap();
-    //     duk.eval("2 + 2").unwrap();
-    //     let i: i8 = duk.get(-1).unwrap();
-    //     assert_eq!(i, 4);
-    // }
-
-    // #[test]
-    // fn concat() {
-    //     let duk = Context::new().unwrap();
-    //     duk.push("Hello").push(",").push("World").push(2);
-    //     duk.concat(4).unwrap();
-    //     let i: String = duk.get(-1).unwrap();
-    //     assert_eq!(i, "Hello,World2");
-
-    //     let ret = duk.concat(4);
-    //     assert!(ret.is_err());
-    // }
 
 }

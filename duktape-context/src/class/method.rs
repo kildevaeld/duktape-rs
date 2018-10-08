@@ -34,17 +34,6 @@ pub trait Method {
     fn call(&self, ctx: &Context, instance: &mut Instance) -> Result<i32>;
 }
 
-pub struct Wrapped<T: Fn(&Context, &mut Instance) -> Result<i32>>(pub T, pub i32);
-
-impl<T: Fn(&Context, &mut Instance) -> Result<i32>> Method for Wrapped<T> {
-    fn argc(&self) -> i32 {
-        self.1
-    }
-    fn call(&self, ctx: &Context, instance: &mut Instance) -> Result<i32> {
-        self.0(ctx, instance)
-    }
-}
-
 impl<T: Fn(&Context, &mut Instance) -> Result<i32>> Method for (i32, T) {
     fn argc(&self) -> i32 {
         self.0
