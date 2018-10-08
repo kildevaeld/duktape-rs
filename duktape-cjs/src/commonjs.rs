@@ -14,29 +14,6 @@ pub struct CommonJS {
 }
 
 impl CommonJS {
-    pub fn build_require<'a>(&self, ctx: &'a Context, module_id: &str) -> Result<Function<'a>> {
-        let require: Box<dyn Callable> = Box::new(Require {});
-        let function: Object = ctx.push(require).getp()?;
-
-        let mut stash: Object = ctx.push_global_stash().getp()?;
-        stash = stash.get(KEY)?;
-
-        function
-            .set(MODULE_ID_KEY, module_id)
-            .set("cache", stash.get::<_, Reference>("cache")?)
-            .set("main", stash.get::<_, Reference>("main")?);
-
-        let function: Result<Function> = function.into();
-
-        match function {
-            Ok(mut ret) => {
-                ret.set_name("require");
-                Ok(ret)
-            }
-            Err(e) => Err(e),
-        }
-    }
-
     pub fn extensions(&self) -> Vec<String> {
         self.loaders
             .iter()
@@ -46,9 +23,7 @@ impl CommonJS {
 }
 
 impl Drop for CommonJS {
-    fn drop(&mut self) {
-        println!("{}", "drop it like it's hard");
-    }
+    fn drop(&mut self) {}
 }
 
 impl Key for CommonJS {
@@ -182,10 +157,6 @@ impl Require {
             Err(e) => return Err(ErrorKind::TypeError(format!("{}", e)).into()),
         };
 
-        // if self.has_cache(ctx, &id) {
-        //     return self.get_cache(ctx, &id);
-        // }
-
         let path = Path::new(&id);
 
         let module = match internal::push_module_object(ctx, &path, false) {
@@ -232,28 +203,27 @@ impl Require {
 
         let found = found.unwrap();
 
-        self.push_module(ctx, id);
-        let module = internal::push_module_object(ctx, "", false).unwrap();
-
+        let module = internal::push_module_object(ctx, id, false).unwrap();
+        module.clone().push(ctx);
         let top = ctx.top();
+
         found.module.call(ctx)?;
 
         if ctx.top() > top {
-            ctx.put_prop_string(-2, "exports");
-            module.set("exports", ctx.get::<Reference>(-1)?);
+            module.set("exports", ctx.getp::<Reference>()?);
         }
-
+        ctx.pop(1);
         Ok(module)
     }
 
-    fn has_cache(&self, ctx: &Context, id: &str) -> bool {
-        ctx.push_global_stash()
-            .get_prop_string(-1, KEY)
-            .get_prop_string(-1, "cache");
-        let ret = ctx.has_prop_string(-1, id);
-        ctx.pop(3);
-        ret
-    }
+    // fn has_cache(&self, ctx: &Context, id: &str) -> bool {
+    //     ctx.push_global_stash()
+    //         .get_prop_string(-1, KEY)
+    //         .get_prop_string(-1, "cache");
+    //     let ret = ctx.has_prop_string(-1, id);
+    //     ctx.pop(3);
+    //     ret
+    // }
 
     // fn get_cache(&self, ctx: &Context, id: &str) -> Result<Object> {
     //     ctx.push_global_stash()
@@ -269,13 +239,13 @@ impl Require {
     //     ctx.getp()
     // }
 
-    fn set_cache(&self, ctx: &Context, id: &str, index: i32) -> Result<()> {
-        Ok(())
-    }
+    // fn set_cache(&self, ctx: &Context, id: &str, index: i32) -> Result<()> {
+    //     Ok(())
+    // }
 
-    fn del_cache(&self, ctx: &Context, id: &str) -> Result<()> {
-        Ok(())
-    }
+    // fn del_cache(&self, ctx: &Context, id: &str) -> Result<()> {
+    //     Ok(())
+    // }
 }
 
 impl Callable for Require {
@@ -304,15 +274,13 @@ impl Callable for Require {
             self.load_module(&id, ctx, &common)?
         };
 
-        // if ctx.top() == 0 {
-        //     return Err(ErrorKind::TypeError("module return invalid type".to_string()).into());
-        // }
+        if !module.has("exports") {
+            bail!(ErrorKind::TypeError(format!(
+                "module does not have a 'exports' field"
+            )));
+        }
 
-        //id = ctx.get::<Object>(-1)?.get::<_, String>("id")?;
-
-        //.set_cache(ctx, &id, -1)?;
-
-        ctx.get_prop_string(-1, "exports");
+        module.get::<_, Reference>("exports")?.push();
 
         Ok(1)
     }

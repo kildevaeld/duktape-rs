@@ -1,5 +1,5 @@
 use super::error::{Error, Result};
-use duktape_sys::*;
+use duktape::duktape_sys::duk_context;
 use serde::ser::{self, Serialize};
 
 pub struct DuktapeSerializer {
@@ -200,11 +200,13 @@ impl<'a> ser::Serializer for &'a mut DuktapeSerializer {
     where
         T: ?Sized + Serialize,
     {
-        self.output += "{";
+        // self.output += "{";
+        // variant.serialize(&mut *self)?;
+        // self.output += ":";
+        // value.serialize(&mut *self)?;
+        // self.output += "}";
+        self.ctx.push_object();
         variant.serialize(&mut *self)?;
-        self.output += ":";
-        value.serialize(&mut *self)?;
-        self.output += "}";
         Ok(())
     }
 

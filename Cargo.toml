@@ -2,8 +2,10 @@
 
 members = [
     "duktape-sys",
+    "duktape-context",
     "duktape",
     "duktape-cjs",
     "duktape-stdlib",
+    #"duktape-serde",
     "duk"
 ]

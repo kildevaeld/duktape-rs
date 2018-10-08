@@ -1,11 +1,14 @@
 extern crate duktape;
 extern crate duktape_cjs;
 extern crate duktape_stdlib;
+extern crate env_logger;
+extern crate log;
+extern crate rustyline;
+
+mod repl;
 
 use duktape::prelude::*;
 use std::{env, fs};
-extern crate env_logger;
-extern crate log;
 
 fn main() -> duktape_cjs::error::Result<()> {
     env_logger::init();
@@ -13,14 +16,17 @@ fn main() -> duktape_cjs::error::Result<()> {
     let mut ctx = Context::new().unwrap();
 
     let mut require = duktape_cjs::RequireBuilder::new();
-    duktape_stdlib::init(&mut require);
+    println!("first {:?}", ctx);
+    duktape_stdlib::init(&ctx, &mut require);
 
-    duktape_cjs::register(&mut ctx, require)?;
+    duktape_cjs::register(&ctx, require)?;
+
+    duktape_stdlib::init_runtime(&ctx);
 
     let args = env::args();
 
     if args.len() < 2 {
-        println!("usage: duk <path>");
+        repl::run(&ctx); //println!("usage: duk <path>");
         return Ok(());
     }
 

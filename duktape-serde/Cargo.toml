@@ -1,10 +1,11 @@
 [package]
-name = "duktape-stdlib"
+name = "duktape-serde"
 version = "0.1.0"
 authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+serde = "1.0.79"
 duktape = { path = "../duktape" }
-duktape-cjs = { path = "../duktape-cjs" }
-duktape-sys = { path = "../duktape-sys" }
+duktape-sys = { path = "../duktape_sys" }
+error-chain = "0.12.0"

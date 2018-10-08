@@ -1,0 +1,11 @@
+var utils = require('utils');
+var test = utils.format('Hello');
+var utils = require('utils');
+console.log('hhloe')
+console.log('rapper')
+var io = require('io');
+io.stdout.write('')
+console.log('rapper')
+test
+console.log('rapper')
+require('io').stdout.write('rapra')

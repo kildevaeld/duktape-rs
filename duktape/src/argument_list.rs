@@ -24,7 +24,7 @@ impl ArgumentList for () {
     fn len(&self) -> i32 {
         0
     }
-    fn push(self, ctx: &Context) {}
+    fn push(self, _ctx: &Context) {}
 }
 
 impl<'a, T1: 'a + Serialize, T2: 'a + Serialize> ArgumentList for (T1, T2)

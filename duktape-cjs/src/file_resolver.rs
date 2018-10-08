@@ -51,8 +51,23 @@ impl ModuleResolver for FileResolver {
             }
         } else if !id.exists() {
             resolve_err!(id);
+        } else if id.is_dir() {
+            let nid = id.join("index");
+            let mut found = false;
+            for ext in extensions {
+                let mut path = nid.clone();
+                path.set_extension(ext);
+                if path.exists() {
+                    id = path;
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                resolve_err!(id);
+            }
         }
-        println!("parent: '{:?}', id: '{:?}'", parent, id);
+
         Ok(id.to_str().unwrap().to_owned())
     }
 }

@@ -20,7 +20,7 @@ impl<'a> Object<'a> {
     pub fn get<T: AsRef<[u8]>, V: Deserialize<'a>>(&self, prop: T) -> Result<V> {
         self.refer.push();
         let ret = self.refer.ctx.get_prop_string(-1, prop).get::<V>(-1)?;
-        unsafe { duk::duk_pop_n(self.refer.ctx.inner, 2) };
+        self.refer.ctx.pop(2);
         Ok(ret)
     }
 
@@ -28,6 +28,13 @@ impl<'a> Object<'a> {
         self.refer.push();
         self.refer.ctx.push(value).put_prop_string(-2, prop).pop(1);
         self
+    }
+
+    pub fn has<T: AsRef<[u8]>>(&self, prop: T) -> bool {
+        self.refer.push();
+        let ret = self.refer.ctx.has_prop_string(-1, prop);
+        self.refer.ctx.pop(1);
+        ret
     }
 
     pub fn del<T: AsRef<[u8]>>(&mut self, prop: T) -> &mut Self {

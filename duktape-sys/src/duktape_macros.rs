@@ -270,7 +270,7 @@ pub unsafe fn duk_pcompile_lstring(
         ctx,
         buf,
         len,
-        0 | flags | DUK_COMPILE_NOSOURCE | DUK_COMPILE_NOFILENAME,
+        0 | flags | DUK_COMPILE_SAFE | DUK_COMPILE_NOSOURCE | DUK_COMPILE_NOFILENAME,
     )
 }
 
@@ -281,7 +281,12 @@ pub unsafe fn duk_pcompile_lstring_filename(
     buf: *const c_char,
     len: duktape::duk_size_t,
 ) -> duktape::duk_int_t {
-    duktape::duk_compile_raw(ctx, buf, len, 1 | flags | DUK_COMPILE_NOSOURCE)
+    duktape::duk_compile_raw(
+        ctx,
+        buf,
+        len,
+        1 | flags | DUK_COMPILE_SAFE | DUK_COMPILE_NOSOURCE,
+    )
 }
 
 #[inline(always)]

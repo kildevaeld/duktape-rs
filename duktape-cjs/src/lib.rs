@@ -19,12 +19,16 @@ pub use self::commonjs::{CommonJS, RequireBuilder};
 pub use self::eval::*;
 pub use self::types::{ModuleLoader, ModuleResolver};
 
+pub mod require {
+    pub use super::internal::*;
+}
+
 pub mod resolvers {
     pub use super::file_resolver::*;
 }
 
 pub fn register(
-    ctx: &mut duktape::Context,
+    ctx: &duktape::Context,
     mut builder: RequireBuilder,
 ) -> duktape::error::Result<bool> {
     ctx.push_global_stash();
@@ -50,10 +54,8 @@ pub fn register(
 
     ctx.data_mut()?.insert::<CommonJS>(builder.build());
 
-    let commonjs = ctx.data()?.get::<CommonJS>().unwrap();
-
     ctx.push_global_object()
-        .push(commonjs.build_require(ctx, "")?)
+        .push(commonjs::build_require(ctx, "")?)
         .put_prop_string(-2, "require")
         .pop(1);
 

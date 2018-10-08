@@ -1,10 +1,10 @@
 [package]
-name = "duktape-stdlib"
+name = "duktape-context"
 version = "0.1.0"
 authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-duktape = { path = "../duktape" }
-duktape-cjs = { path = "../duktape-cjs" }
 duktape-sys = { path = "../duktape-sys" }
+error-chain = "0.12.0"
+typemap = "0.3.3"

@@ -55,10 +55,12 @@ impl_for_ser!(i8, f64, duk_push_number);
 impl_for_ser!(i16, f64, duk_push_number);
 impl_for_ser!(i32, f64, duk_push_number);
 impl_for_ser!(i64, f64, duk_push_number);
+impl_for_ser!(u64, f64, duk_push_number);
 impl_for_ser!(usize, f64, duk_push_number);
 impl_for_ser!(u8, f64, duk_push_number);
 impl_for_ser!(u16, f64, duk_push_number);
 impl_for_ser!(u32, f64, duk_push_number);
+impl_for_ser!(f64, f64, duk_push_number);
 impl_for_ser!(bool, u32, duk_push_boolean);
 
 impl_for_der!(isize, duk_get_number, duk_is_number);
