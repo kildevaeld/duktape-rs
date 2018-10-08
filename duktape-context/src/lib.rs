@@ -11,8 +11,13 @@ mod privates;
 pub mod types;
 
 pub use self::callable::Callable;
-//pub use self::class;
 pub use self::context::*;
+
+pub mod prelude {
+    pub use super::callable::Callable;
+    pub use super::context::*;
+    pub use super::types::*;
+}
 
 #[cfg(test)]
 mod tests {
