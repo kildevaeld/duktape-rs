@@ -10,7 +10,7 @@ pub mod error;
 mod privates;
 
 pub use self::callable::Callable;
-pub use self::class::{build, Instance};
+pub use self::class::*;
 pub use self::context::*;
 
 #[cfg(test)]
