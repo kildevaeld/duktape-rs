@@ -1,5 +1,3 @@
-use std::str;
-
 error_chain!{
 
     errors {
@@ -26,8 +24,5 @@ error_chain!{
         }
     }
 
-    foreign_links {
-        Utf8(str::Utf8Error);
-    }
 
 }

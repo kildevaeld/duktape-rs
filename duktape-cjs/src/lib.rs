@@ -55,7 +55,7 @@ pub fn register(
     ctx.data_mut()?.insert::<CommonJS>(builder.build());
 
     ctx.push_global_object()
-        .push(commonjs::build_require(ctx, "")?)
+        .push(commonjs::build_require(ctx, "")?)?
         .put_prop_string(-2, "require")
         .pop(1);
 

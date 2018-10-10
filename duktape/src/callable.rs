@@ -1,12 +1,9 @@
 use super::context::Context;
-use super::encoding::Serialize;
 use super::error::Result;
 use duktape_sys::*;
 use std::ffi::{c_void, CString};
 
 static KEY: &'static [u8] = b"\xFFptr";
-
-pub type CallableBoxed = Box<dyn Callable>;
 
 /// A Callable is callable from js
 pub trait Callable {
@@ -57,43 +54,30 @@ unsafe extern "C" fn dtor(ctx: *mut duk_context) -> duk_ret_t {
     return 0;
 }
 
-impl Serialize for Box<dyn Callable> {
-    fn to_context(self, context: &Context) -> Result<()> {
-        unsafe {
-            duk_push_c_function(context.inner, Some(call), self.argc());
-            let m = Box::new(self);
-            duk_push_pointer(context.inner, Box::into_raw(m) as *mut c_void);
-            duk_put_prop_string(context.inner, -2, KEY.as_ptr() as *const i8);
-            duk_push_c_function(context.inner, Some(dtor), 1);
-            duk_set_finalizer(context.inner, -2);
-        }
-        Ok(())
-    }
+pub(crate) unsafe fn push_callable(context: &Context, callable: Box<dyn Callable>) {
+    duk_push_c_function(context.inner, Some(call), callable.argc());
+    let m = Box::new(callable);
+    duk_push_pointer(context.inner, Box::into_raw(m) as *mut c_void);
+    duk_put_prop_string(context.inner, -2, KEY.as_ptr() as *const i8);
+    duk_push_c_function(context.inner, Some(dtor), 1);
+    duk_set_finalizer(context.inner, -2);
 }
 
-/* Closure support */
-struct Wrapped {
-    cb: Box<dyn Fn(&Context) -> Result<i32>>,
-    a: i32,
-}
-
-impl Callable for Wrapped {
+impl<T: Fn(&Context) -> Result<i32>> Callable for (i32, T) {
     fn argc(&self) -> i32 {
-        self.a
+        self.0
     }
+
     fn call(&self, ctx: &Context) -> Result<i32> {
-        (self.cb)(ctx)
+        self.1(ctx)
     }
 }
 
-pub fn cb(argc: i32, cb: Box<dyn Fn(&Context) -> Result<i32>>) -> Box<dyn Callable> {
-    Box::new(Wrapped { cb: cb, a: argc })
-}
+impl<T: Fn(&Context) -> Result<i32>> Callable for T {
+    fn argc(&self) -> i32 {
+        0
+    }
 
-impl<T> Callable for T
-where
-    T: Fn(&Context) -> Result<i32>,
-{
     fn call(&self, ctx: &Context) -> Result<i32> {
         self(ctx)
     }

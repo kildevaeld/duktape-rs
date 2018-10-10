@@ -2,7 +2,7 @@ use super::error::Result;
 use super::internal;
 use super::types::ModuleLoader;
 use duktape::{
-    types::{Object, Reference},
+    types::{Object, Ref},
     Context,
 };
 use std::str;
@@ -21,7 +21,7 @@ impl ModuleLoader for JsonLoader {
     fn load(&self, ctx: &Context, _module: &Object, buffer: &[u8]) -> Result<()> {
         let o = ctx.get_global_string("JSON").getp::<Object>()?;
         let json = str::from_utf8(buffer)?;
-        o.call::<_, _, Reference>("parse", json)?.push();
+        o.call::<_, _, Ref>("parse", json)?.push();
         Ok(())
     }
 }

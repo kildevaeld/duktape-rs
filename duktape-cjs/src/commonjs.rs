@@ -4,6 +4,7 @@ use super::types::{KEY, MODULE_ID_KEY};
 use super::internal;
 use duktape::prelude::*;
 use duktape::Key;
+use duktape::{error::ErrorKind, error::Result};
 use regex::Regex;
 use std::path::Path;
 
@@ -121,12 +122,13 @@ impl RequireBuilder {
 pub struct Require;
 
 impl Require {
-    fn push_module(&self, ctx: &Context, id: &str) {
+    fn push_module(&self, ctx: &Context, id: &str) -> Result<()> {
         ctx.push_object()
-            .push(id)
+            .push(id)?
             .put_prop_string(-2, "id")
             .push_object()
             .put_prop_string(-2, "exports");
+        Ok(())
     }
 
     fn load_module<'a>(&self, id: &str, ctx: &'a Context, repo: &CommonJS) -> Result<Object<'a>> {
@@ -204,13 +206,13 @@ impl Require {
         let found = found.unwrap();
 
         let module = internal::push_module_object(ctx, id, false).unwrap();
-        module.clone().push(ctx);
+        module.clone().to_context(ctx);
         let top = ctx.top();
 
         found.module.call(ctx)?;
 
         if ctx.top() > top {
-            module.set("exports", ctx.getp::<Reference>()?);
+            module.set("exports", ctx.getp::<Ref>()?);
         }
         ctx.pop(1);
         Ok(module)
@@ -280,7 +282,7 @@ impl Callable for Require {
             )));
         }
 
-        module.get::<_, Reference>("exports")?.push();
+        module.get::<_, Ref>("exports")?.push();
 
         Ok(1)
     }
@@ -291,16 +293,16 @@ impl Drop for Require {
 }
 
 pub fn build_require<'a>(ctx: &'a Context, module_id: &str) -> Result<Function<'a>> {
-    let require: Box<dyn Callable> = Box::new(Require {});
-    let function: Object = ctx.push(require).getp()?;
+    //let require: Box<dyn Callable> = Box::new(Require {});
+    let function: Object = ctx.push_function(Require {}).getp()?;
 
     let mut stash: Object = ctx.push_global_stash().getp()?;
     stash = stash.get(KEY)?;
 
     function
         .set(MODULE_ID_KEY, module_id)
-        .set("cache", stash.get::<_, Reference>("cache")?)
-        .set("main", stash.get::<_, Reference>("main")?);
+        .set("cache", stash.get::<_, Ref>("cache")?)
+        .set("main", stash.get::<_, Ref>("main")?);
 
     let function: Result<Function> = function.into();
 

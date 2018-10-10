@@ -1,4 +1,4 @@
-use super::super::{error::Result, Context};
+use super::super::{error::Result, Context, Serialize};
 use duktape_sys::*;
 use std::ffi::{c_void, CString};
 use typemap::TypeMap;
@@ -34,33 +34,29 @@ pub trait Method {
     fn call(&self, ctx: &Context, instance: &mut Instance) -> Result<i32>;
 }
 
-impl<T: Fn(&Context, &mut Instance) -> Result<i32>> Method for (i32, T) {
-    fn argc(&self) -> i32 {
-        self.0
-    }
+pub struct Wrapped<T: Fn(&Context, &mut Instance) -> Result<i32>>(pub T, pub i32);
 
+impl<T: Fn(&Context, &mut Instance) -> Result<i32>> Method for Wrapped<T> {
+    fn argc(&self) -> i32 {
+        self.1
+    }
     fn call(&self, ctx: &Context, instance: &mut Instance) -> Result<i32> {
-        self.1(ctx, instance)
+        self.0(ctx, instance)
     }
 }
 
-impl<T: Fn(&Context, &mut Instance) -> Result<i32>> Method for T {
-    fn argc(&self) -> i32 {
-        0
+impl Serialize for Box<dyn Method> {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        unsafe {
+            duk_push_c_function(ctx.ptr(), Some(call), self.argc());
+            let m = Box::new(self);
+            duk_push_pointer(ctx.ptr(), Box::into_raw(m) as *mut c_void);
+            duk_put_prop_lstring(ctx.ptr(), -2, KEY.as_ptr() as *const i8, KEY.len());
+            duk_push_c_function(ctx.ptr(), Some(dtor), 1);
+            duk_set_finalizer(ctx.ptr(), -2);
+        }
+        Ok(())
     }
-
-    fn call(&self, ctx: &Context, instance: &mut Instance) -> Result<i32> {
-        self(ctx, instance)
-    }
-}
-
-pub(crate) unsafe fn push_method(ctx: &Context, method: Box<dyn Method>) {
-    duk_push_c_function(ctx.inner, Some(call), method.argc());
-    let m = Box::new(method);
-    duk_push_pointer(ctx.inner, Box::into_raw(m) as *mut c_void);
-    duk_put_prop_lstring(ctx.inner, -2, KEY.as_ptr() as *const i8, KEY.len());
-    duk_push_c_function(ctx.inner, Some(dtor), 1);
-    duk_set_finalizer(ctx.inner, -2);
 }
 
 unsafe extern "C" fn call(ctx: *mut duk_context) -> duk_ret_t {
@@ -117,7 +113,7 @@ unsafe extern "C" fn call(ctx: *mut duk_context) -> duk_ret_t {
 }
 
 unsafe extern "C" fn dtor(ctx: *mut duk_context) -> duk_ret_t {
-    //debug!("method ctor");
+    debug!("method ctor");
     duk_get_prop_lstring(ctx, -1, KEY.as_ptr() as *const i8, KEY.len());
     let ptr = duk_get_pointer(ctx, -1) as *mut Box<dyn Method>;
     duk_pop(ctx);

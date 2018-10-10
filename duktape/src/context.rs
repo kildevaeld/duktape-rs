@@ -1,9 +1,12 @@
-use super::encoding::{Deserialize, Serialize};
+use super::callable::{push_callable, Callable};
+use super::class::{push_class_builder, Builder};
 use super::error::{ErrorKind, Result};
 use super::privates;
+use super::types::{FromDuktape, ToDuktape};
 use duktape_sys::{self as duk, duk_context};
-use std::ffi::CStr;
+use std::ffi::{c_void, CStr};
 use std::fmt;
+use std::mem;
 use std::ptr;
 use typemap::TypeMap;
 
@@ -12,6 +15,39 @@ pub struct Context {
     managed: bool,
     data: *mut TypeMap,
 }
+
+// pub struct Ref<'a> {
+//     pub(crate) ctx: &'a Context,
+//     r: u32,
+// }
+
+// impl<'a> Ref<'a> {
+//     pub fn get_type(&self) -> Type {
+//         self.ctx.push_ref(self);
+//         let ret = self.ctx.get_type(-1);
+//         self.ctx.pop(1);
+//         ret
+//     }
+
+//     pub fn is(&self, value: Type) -> bool {
+//         self.get_type() == value
+//     }
+// }
+
+// impl<'a> Drop for Ref<'a> {
+//     fn drop(&mut self) {
+//         unsafe { privates::unref(self.ctx.inner, self.r) };
+//     }
+// }
+
+// impl<'a> Clone for Ref<'a> {
+//     fn clone(&self) -> Self {
+//         self.ctx.push_ref(self);
+//         let r = self.ctx.get_ref(-1).unwrap();
+//         self.ctx.pop(1);
+//         r
+//     }
+// }
 
 pub type Idx = i32;
 
@@ -42,13 +78,11 @@ macro_rules! handle_error {
 
             let msg: String;
             if $ctx.is_string(-1) {
-                msg = $ctx.getp()?;
+                msg = $ctx.get_string(-1)?.to_owned();
             } else {
                 msg = "Uknown".to_string();
-                $ctx.pop(1);
             }
-
-            $ctx.pop(1);
+            $ctx.pop(2);
 
             return Err(ErrorKind::TypeError(msg).into());
         }
@@ -92,6 +126,7 @@ impl Context {
 
         unsafe { privates::init_refs(d) };
         unsafe { privates::init_data(d) };
+
         Ok(Context {
             inner: d,
             managed: true,
@@ -109,10 +144,6 @@ impl Context {
             managed: false,
             data: unsafe { privates::get_data(duk) },
         }
-    }
-
-    pub fn ptr(&self) -> *mut duk_context {
-        self.inner
     }
 
     pub fn data<'a>(&'a self) -> Result<&'a TypeMap> {
@@ -198,26 +229,6 @@ impl Context {
         }
     }
 
-    pub fn get<'a, T: Deserialize<'a>>(&'a self, index: Idx) -> Result<T> {
-        T::from_context(self, index)
-    }
-
-    pub fn getp<'a, T: Deserialize<'a>>(&'a self) -> Result<T> {
-        let result = T::from_context(self, -1)?;
-        self.pop(1);
-        Ok(result)
-    }
-
-    /// Push a value to the stack
-    pub fn push<T: Serialize>(&self, value: T) -> &Self {
-        value.to_context(self).unwrap();
-        self
-    }
-
-    pub fn create<'a, T: Constructable<'a>>(&'a self) -> Result<T> {
-        T::construct(self)
-    }
-
     pub fn push_null(&self) -> &Self {
         unsafe { duk::duk_push_null(self.inner) };
         self
@@ -234,6 +245,38 @@ impl Context {
         self
     }
 
+    pub fn push_int(&self, value: i32) -> &Self {
+        unsafe { duk::duk_push_int(self.inner, value) };
+        self
+    }
+
+    pub fn push_uint(&self, value: u32) -> &Self {
+        unsafe { duk::duk_push_uint(self.inner, value) };
+        self
+    }
+
+    pub fn push_number<T: Into<f64>>(&self, value: T) -> &Self {
+        unsafe { duk::duk_push_number(self.inner, value.into()) };
+        self
+    }
+
+    pub fn push_string<T: AsRef<[u8]>>(&self, value: T) -> &Self {
+        unsafe { duk::duk_push_string(self.inner, value.as_ref().as_ptr() as *const i8) };
+        self
+    }
+
+    pub fn push_bytes<T: AsRef<[u8]>>(&self, value: T) -> &Self {
+        let mut buffer = unsafe { duk::duk_push_fixed_buffer(self.inner, value.as_ref().len()) };
+        mem::replace(&mut buffer, value.as_ref().as_ptr() as *mut c_void);
+        self
+    }
+
+    pub fn push_function<T: 'static + Callable>(&self, call: T) -> &Self {
+        let c = Box::new(call);
+        unsafe { push_callable(self, c) };
+        self
+    }
+
     push_impl!(push_object, duk_push_object);
     push_impl!(push_bare_object, duk_push_bare_object);
     push_impl!(push_array, duk_push_array);
@@ -241,6 +284,47 @@ impl Context {
     push_impl!(push_global_stash, duk_push_global_stash);
     push_impl!(push_this, duk_push_this);
     push_impl!(push_current_function, duk_push_current_function);
+
+    pub fn get_number(&self, idx: Idx) -> Result<f64> {
+        if !self.is_number(idx) {
+            bail!(ErrorKind::TypeError(format!("number")));
+        }
+        let ret = unsafe { duk::duk_get_number(self.inner, idx) };
+        Ok(ret)
+    }
+
+    pub fn get_int(&self, idx: Idx) -> Result<i32> {
+        if !self.is_number(idx) {
+            bail!(ErrorKind::TypeError(format!("number")));
+        }
+        let ret = unsafe { duk::duk_get_int(self.inner, idx) };
+        Ok(ret)
+    }
+
+    pub fn get_uint(&self, idx: Idx) -> Result<u32> {
+        if !self.is_number(idx) {
+            bail!(ErrorKind::TypeError(format!("number")));
+        }
+        let ret = unsafe { duk::duk_get_uint(self.inner, idx) };
+        Ok(ret)
+    }
+
+    pub fn get_boolean(&self, idx: Idx) -> Result<bool> {
+        if !self.is_boolean(idx) {
+            bail!(ErrorKind::TypeError(format!("boolean")));
+        }
+        let ok = unsafe { duk::duk_get_boolean(self.inner, idx) };
+        Ok(if ok == 1 { true } else { false })
+    }
+
+    pub fn get_string(&self, idx: Idx) -> Result<&str> {
+        if !self.is_string(idx) {
+            bail!(ErrorKind::TypeError(format!("string")));
+        }
+        let ostr = unsafe { duk::duk_get_string(self.inner, idx) };
+        let s = unsafe { CStr::from_ptr(ostr).to_str()? }; //.to_string();
+        Ok(s)
+    }
 
     pub fn get_global_string<T: AsRef<[u8]>>(&self, name: T) -> &Self {
         unsafe {
@@ -438,33 +522,76 @@ impl Context {
         Ok(())
     }
 
-    pub fn call(&self, args: i32) -> Result<()> {
+    pub fn call(&self, args: i32) -> Result<&Self> {
         let ret = unsafe { duk::duk_pcall(self.inner, args) };
         handle_error!(ret, self);
-        Ok(())
+        Ok(self)
     }
 
-    pub fn call_method(&self, args: i32) -> Result<()> {
+    pub fn call_method(&self, args: i32) -> Result<&Self> {
         let ret = unsafe { duk::duk_pcall_method(self.inner, args) };
         handle_error!(ret, self);
-        Ok(())
+        Ok(self)
     }
 
-    pub fn call_prop(&self, idx: Idx, args: i32) -> Result<()> {
+    pub fn call_prop(&self, idx: Idx, args: i32) -> Result<&Self> {
         let ret = unsafe { duk::duk_pcall_prop(self.inner, idx, args) };
         handle_error!(ret, self);
-        Ok(())
+        Ok(self)
     }
 
-    pub fn construct(&self, args: i32) -> Result<()> {
+    pub fn construct(&self, args: i32) -> Result<&Self> {
         let ret = unsafe { duk::duk_pnew(self.inner, args) };
         handle_error!(ret, self);
-        Ok(())
+        Ok(self)
     }
 
     pub fn set_finalizer(&self, idx: Idx) -> &Self {
         unsafe { duk::duk_set_finalizer(self.inner, idx) };
         self
+    }
+
+    // // References
+
+    // pub fn get_ref<'a>(&'a self, idx: Idx) -> Result<Ref<'a>> {
+    //     self.dup(idx);
+    //     let r = unsafe { privates::make_ref(self.inner) };
+    //     self.pop(1);
+    //     Ok(Ref { ctx: self, r })
+    // }
+
+    // pub fn push_ref(&self, refer: &Ref) -> &Self {
+    //     unsafe { privates::push_ref(self.inner, refer.r) };
+    //     self
+    // }
+
+    // Class
+
+    pub fn push_class(&self, builder: Builder) -> Result<&Self> {
+        let ret = unsafe { push_class_builder(self, builder) };
+        match ret {
+            Ok(_) => Ok(self),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn create<'a, T: Constructable<'a>>(&'a self) -> Result<T> {
+        T::construct(self)
+    }
+
+    pub fn push<T: ToDuktape>(&self, value: T) -> Result<&Self> {
+        value.to_context(self)?;
+        Ok(self)
+    }
+
+    pub fn get<'de, T: FromDuktape<'de>>(&'de self, index: Idx) -> Result<T> {
+        T::from_context(self, index)
+    }
+
+    pub fn getp<'de, T: FromDuktape<'de>>(&'de self) -> Result<T> {
+        let ret = T::from_context(self, -1);
+        self.pop(1);
+        ret
     }
 }
 
@@ -487,6 +614,12 @@ impl fmt::Debug for Context {
     }
 }
 
+impl std::cmp::PartialEq for Context {
+    fn eq(&self, other: &Context) -> bool {
+        self.inner == other.inner
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
 
@@ -499,23 +632,15 @@ pub mod tests {
     }
 
     #[test]
-    fn context_eval() {
+    fn context_push_function() {
         let duk = Context::new().unwrap();
-        duk.eval("2 + 2").unwrap();
-        let i: i8 = duk.get(-1).unwrap();
-        assert_eq!(i, 4);
-    }
+        duk.push_function(|ctx: &Context| {
+            ctx.push_int(42);
+            Ok(1)
+        });
 
-    #[test]
-    fn concat() {
-        let duk = Context::new().unwrap();
-        duk.push("Hello").push(",").push("World").push(2);
-        duk.concat(4).unwrap();
-        let i: String = duk.get(-1).unwrap();
-        assert_eq!(i, "Hello,World2");
-
-        let ret = duk.concat(4);
-        assert!(ret.is_err());
+        duk.call(0).unwrap();
+        assert_eq!(duk.get_int(-1).unwrap(), 42);
     }
 
 }
