@@ -8,3 +8,8 @@ edition = "2018"
 duktape-sys = { path = "../duktape-sys" }
 error-chain = "0.12"
 typemap = "0.3"
+bitflags = "0.8"
+
+[[example]]
+name = "class"
+path = "example/class.rs"

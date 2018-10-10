@@ -6,12 +6,12 @@ use std::ptr;
 
 pub static DUK_VARARGS: duk_int_t = -1;
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_create_heap_default() -> *mut duktape::duk_context {
     duktape::duk_create_heap(None, None, None, ptr::null_mut(), None)
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_safe_to_string(
     ctx: *mut duktape::duk_context,
     index: duktape::duk_idx_t,
@@ -20,7 +20,7 @@ pub unsafe fn duk_safe_to_string(
 }
 
 /* PLAIN */
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_eval(ctx: *mut duktape::duk_context) {
     duktape::duk_eval_raw(
         ctx,
@@ -30,7 +30,7 @@ pub unsafe fn duk_eval(ctx: *mut duktape::duk_context) {
     );
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_eval_noresult(ctx: *mut duktape::duk_context) {
     duktape::duk_eval_raw(
         ctx,
@@ -40,7 +40,7 @@ pub unsafe fn duk_eval_noresult(ctx: *mut duktape::duk_context) {
     );
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_peval(ctx: *mut duktape::duk_context) -> duktape::duk_int_t {
     duktape::duk_eval_raw(
         ctx,
@@ -50,7 +50,7 @@ pub unsafe fn duk_peval(ctx: *mut duktape::duk_context) -> duktape::duk_int_t {
     )
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_peval_noresult(ctx: *mut duktape::duk_context) -> duktape::duk_int_t {
     duktape::duk_eval_raw(
         ctx,
@@ -60,12 +60,12 @@ pub unsafe fn duk_peval_noresult(ctx: *mut duktape::duk_context) -> duktape::duk
     )
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_compile(ctx: *mut duktape::duk_context, flags: duktape::duk_uint_t) {
     duktape::duk_compile_raw(ctx, ptr::null(), 0, 2 | flags);
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_pcompile(
     ctx: *mut duktape::duk_context,
     flags: duktape::duk_uint_t,
@@ -84,7 +84,7 @@ pub unsafe fn duk_eval_string(ctx: *mut duktape::duk_context, src: *const c_char
     );
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_eval_string_noresult(ctx: *mut duktape::duk_context, src: *const c_char) {
     duktape::duk_eval_raw(
         ctx,
@@ -98,7 +98,7 @@ pub unsafe fn duk_eval_string_noresult(ctx: *mut duktape::duk_context, src: *con
     );
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_peval_string_noresult(
     ctx: *mut duktape::duk_context,
     src: *const c_char,
@@ -116,7 +116,7 @@ pub unsafe fn duk_peval_string_noresult(
     )
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_compile_string(
     ctx: *mut duktape::duk_context,
     flags: duktape::duk_uint_t,
@@ -130,7 +130,7 @@ pub unsafe fn duk_compile_string(
     );
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_compile_string_filename(
     ctx: *mut duktape::duk_context,
     flags: duktape::duk_uint_t,
@@ -144,7 +144,7 @@ pub unsafe fn duk_compile_string_filename(
     );
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_pcompile_string(
     ctx: *mut duktape::duk_context,
     flags: duktape::duk_uint_t,
@@ -158,7 +158,7 @@ pub unsafe fn duk_pcompile_string(
     )
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_pcompile_string_filename(
     ctx: *mut duktape::duk_context,
     flags: duktape::duk_uint_t,
@@ -174,7 +174,7 @@ pub unsafe fn duk_pcompile_string_filename(
 
 /* LSTRING */
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_eval_lstring(
     ctx: *mut duktape::duk_context,
     buf: *const c_char,
@@ -188,7 +188,7 @@ pub unsafe fn duk_eval_lstring(
     );
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_eval_lstring_noresult(
     ctx: *mut duktape::duk_context,
     buf: *const c_char,
@@ -202,7 +202,7 @@ pub unsafe fn duk_eval_lstring_noresult(
     );
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_peval_lstring(
     ctx: *mut duktape::duk_context,
     buf: *const c_char,
@@ -216,7 +216,7 @@ pub unsafe fn duk_peval_lstring(
     )
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_peval_lstring_noresult(
     ctx: *mut duktape::duk_context,
     buf: *const c_char,
@@ -234,7 +234,7 @@ pub unsafe fn duk_peval_lstring_noresult(
     )
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_compile_lstring(
     ctx: *mut duktape::duk_context,
     flags: duktape::duk_uint_t,
@@ -249,7 +249,7 @@ pub unsafe fn duk_compile_lstring(
     );
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_compile_lstring_filename(
     ctx: *mut duktape::duk_context,
     flags: duktape::duk_uint_t,
@@ -259,7 +259,7 @@ pub unsafe fn duk_compile_lstring_filename(
     duktape::duk_compile_raw(ctx, buf, len, 1 | flags | DUK_COMPILE_NOSOURCE);
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_pcompile_lstring(
     ctx: *mut duktape::duk_context,
     flags: duktape::duk_uint_t,
@@ -274,7 +274,7 @@ pub unsafe fn duk_pcompile_lstring(
     )
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_pcompile_lstring_filename(
     ctx: *mut duktape::duk_context,
     flags: duktape::duk_uint_t,
@@ -289,7 +289,7 @@ pub unsafe fn duk_pcompile_lstring_filename(
     )
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_dump_context_stdout(ctx: *mut duktape::duk_context) {
     duk_push_context_dump(ctx);
     let ostr = duk_get_string(ctx, -1);
@@ -298,7 +298,7 @@ pub unsafe fn duk_dump_context_stdout(ctx: *mut duktape::duk_context) {
     println!("{}", s);
 }
 
-#[inline(always)]
+//#[inline(always)]
 pub unsafe fn duk_push_fixed_buffer(
     ctx: *mut duktape::duk_context,
     size: usize,

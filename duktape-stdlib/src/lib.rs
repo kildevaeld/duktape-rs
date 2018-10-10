@@ -1,9 +1,9 @@
 extern crate duktape;
 extern crate duktape_cjs;
-extern crate duktape_sys;
 mod fs;
 mod io;
 
+use duktape::error::{ErrorKind, Result};
 use duktape::prelude::*;
 use duktape_cjs::require;
 
@@ -30,8 +30,7 @@ pub fn init(ctx: &Context, builder: &mut duktape_cjs::RequireBuilder) {
 }
 
 pub fn init_runtime(ctx: &Context) {
-    ctx.compile_string(RUNTIME, duktape_sys::DUK_COMPILE_EVAL)
-        .unwrap();
+    ctx.compile_string(RUNTIME, DUK_COMPILE_EVAL).unwrap();
 
     ctx.call(0).unwrap();
 

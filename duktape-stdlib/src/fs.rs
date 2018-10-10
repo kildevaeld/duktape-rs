@@ -1,5 +1,8 @@
-use duktape;
 use duktape::prelude::*;
+use duktape::{
+    self,
+    error::{ErrorKind, Result},
+};
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 
@@ -24,14 +27,14 @@ fn get_file_options(input: &str) -> OpenOptions {
     o
 }
 
-pub fn init_file<'a>() -> duktape::class::Builder<'a> {
-    let mut file = duktape::class::build();
+pub fn init_file<'a>() -> class::Builder<'a> {
+    let mut file = class::build();
 
-    file.constructor(2, |ctx, this| {
+    file.constructor((2, |ctx: &Context, this: &mut class::Instance| {
         let path: String = ctx.get(0)?;
         let options: OpenOptions;
         if ctx.is(Type::String, 1) {
-            options = get_file_options(&ctx.get::<String>(1)?);
+            options = get_file_options(ctx.get::<&str>(1)?);
         } else {
             let mut o = OpenOptions::new();
             o.read(true);
@@ -42,33 +45,39 @@ pub fn init_file<'a>() -> duktape::class::Builder<'a> {
         this.data_mut().insert::<FileKey>(file);
 
         Ok(0)
-    })
-    .method("read", 1, |ctx, this| {
-        let file = this.data_mut().get_mut::<FileKey>().unwrap();
+    }))
+    .method(
+        "read",
+        (1, |ctx: &Context, this: &mut class::Instance| {
+            let file = this.data_mut().get_mut::<FileKey>().unwrap();
 
-        let mut buffer = Vec::with_capacity(256);
-        file.read(&mut buffer).unwrap();
-        ctx.push(buffer.as_slice());
+            let mut buffer = Vec::with_capacity(256);
+            file.read(&mut buffer).unwrap();
+            ctx.push(buffer.as_slice());
 
-        Ok(1)
-    })
-    .method("write", 1, |ctx, this| {
-        let writer = match this.data_mut().get_mut::<FileKey>() {
-            Some(w) => w,
-            None => return Err(ErrorKind::TypeError("file closed".to_owned()).into()),
-        };
+            Ok(1)
+        }),
+    )
+    .method(
+        "write",
+        (1, |ctx: &Context, this: &mut class::Instance| {
+            let writer = match this.data_mut().get_mut::<FileKey>() {
+                Some(w) => w,
+                None => return Err(ErrorKind::TypeError("file closed".to_owned()).into()),
+            };
 
-        if ctx.is(Type::Undefined, 0) {
-            return Err(ErrorKind::TypeError("invalid type".to_owned()).into());
-        }
+            if ctx.is(Type::Undefined, 0) {
+                return Err(ErrorKind::TypeError("invalid type".to_owned()).into());
+            }
 
-        let r = ctx.get::<Reference>(0)?;
-        write!(writer, "{}", r);
+            let r = ctx.get::<Ref>(0)?;
+            write!(writer, "{}", r);
 
-        ctx.push_this();
-        Ok(1)
-    })
-    .method("flush", 0, |ctx, this| {
+            ctx.push_this();
+            Ok(1)
+        }),
+    )
+    .method("flush", |ctx: &Context, this: &mut class::Instance| {
         let writer = match this.data_mut().get_mut::<FileKey>() {
             Some(w) => w,
             None => return Ok(0),
@@ -77,7 +86,7 @@ pub fn init_file<'a>() -> duktape::class::Builder<'a> {
         ctx.push_this();
         Ok(1)
     })
-    .method("close", 0, |ctx, this| {
+    .method("close", |ctx: &Context, this: &mut class::Instance| {
         let writer = match this.data_mut().get_mut::<FileKey>() {
             Some(w) => w,
             None => return Ok(0),
@@ -96,9 +105,9 @@ pub fn init_fs(ctx: &Context) -> Result<i32> {
 
     module.set("File", init_file());
 
-    module
-        .set("mkdir", duktape::cb(1, Box::new(|_ctx| Ok(0))))
-        .set("mkdirAll", duktape::cb(1, Box::new(|_ctx| Ok(0))));
+    // module
+    //     .set("mkdir", duktape::cb(1, Box::new(|_ctx| Ok(0))))
+    //     .set("mkdirAll", duktape::cb(1, Box::new(|_ctx| Ok(0))));
 
     ctx.push(module);
     Ok(1)

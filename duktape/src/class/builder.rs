@@ -1,4 +1,4 @@
-use super::super::types::Function;
+use super::super::types::{Function, ToDuktape};
 use super::super::{error::Result, Context};
 use super::method::{push_method, Instance, Method, CTOR_KEY, DATA_KEY};
 use duktape_sys as duk;
@@ -23,21 +23,13 @@ impl<'a> Builder<'a> {
         self
     }
 
-    pub fn method<T: 'static + Method>(&mut self, name: &str, method: T) -> &mut Self
-    where
-        T: Fn(&Context, &mut Instance) -> Result<i32>,
-    {
-        //let wrapped = Wrapped(method, argc);
+    pub fn method<T: 'static + Method>(&mut self, name: &str, method: T) -> &mut Self {
         let b: Box<dyn Method> = Box::new(method);
         self.methods.insert(name.to_owned(), Prototype::Method(b));
         self
     }
 
-    pub fn constructor<T: 'static + Method>(&mut self, ctor: T) -> &mut Self
-    where
-        T: Fn(&Context, &mut Instance) -> Result<i32>,
-    {
-        //let wrapped = Wrapped(ctor, argc);
+    pub fn constructor<T: 'static + Method>(&mut self, ctor: T) -> &mut Self {
         let b: Box<dyn Method> = Box::new(ctor);
         self.ctor = Some(b);
         self
@@ -46,6 +38,12 @@ impl<'a> Builder<'a> {
     pub fn inherit(&mut self, parent: Function<'a>) -> &mut Self {
         self.parent = Some(parent);
         self
+    }
+}
+
+impl<'a> ToDuktape for Builder<'a> {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        unsafe { push_class_builder(ctx, self) }
     }
 }
 

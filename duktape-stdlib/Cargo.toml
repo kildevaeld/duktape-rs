@@ -7,4 +7,3 @@ edition = "2018"
 [dependencies]
 duktape = { path = "../duktape" }
 duktape-cjs = { path = "../duktape-cjs" }
-duktape-sys = { path = "../duktape-sys" }

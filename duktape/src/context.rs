@@ -10,45 +10,6 @@ use std::mem;
 use std::ptr;
 use typemap::TypeMap;
 
-pub struct Context {
-    pub(crate) inner: *mut duk_context,
-    managed: bool,
-    data: *mut TypeMap,
-}
-
-// pub struct Ref<'a> {
-//     pub(crate) ctx: &'a Context,
-//     r: u32,
-// }
-
-// impl<'a> Ref<'a> {
-//     pub fn get_type(&self) -> Type {
-//         self.ctx.push_ref(self);
-//         let ret = self.ctx.get_type(-1);
-//         self.ctx.pop(1);
-//         ret
-//     }
-
-//     pub fn is(&self, value: Type) -> bool {
-//         self.get_type() == value
-//     }
-// }
-
-// impl<'a> Drop for Ref<'a> {
-//     fn drop(&mut self) {
-//         unsafe { privates::unref(self.ctx.inner, self.r) };
-//     }
-// }
-
-// impl<'a> Clone for Ref<'a> {
-//     fn clone(&self) -> Self {
-//         self.ctx.push_ref(self);
-//         let r = self.ctx.get_ref(-1).unwrap();
-//         self.ctx.pop(1);
-//         r
-//     }
-// }
-
 pub type Idx = i32;
 
 #[derive(PartialEq, Debug)]
@@ -65,6 +26,27 @@ pub enum Type {
 
 pub trait Constructable<'ctor>: Sized {
     fn construct(duk: &'ctor Context) -> Result<Self>;
+}
+
+bitflags! {
+    pub flags DUK_COMPILE: u32 {
+        const DUK_COMPILE_EVAL = 8,
+        const DUK_COMPILE_FUNCTION = 16,
+        const DUK_COMPILE_STRICT = 32,
+        const DUK_COMPILE_SHEBANG = 64,
+        const DUK_COMPILE_SAFE = 128,
+        const DUK_COMPILE_NORESULT = 256,
+        const DUK_COMPILE_NOSOURCE = 512,
+        const DUK_COMPILE_STRLEN = 1024,
+        const DUK_COMPILE_NOFILENAME = 2048,
+        const DUK_COMPILE_FUNCEXPR = 4096,
+    }
+}
+
+pub struct Context {
+    pub(crate) inner: *mut duk_context,
+    managed: bool,
+    data: *mut TypeMap,
 }
 
 macro_rules! handle_error {
@@ -165,7 +147,7 @@ impl Context {
     }
 
     /// Evaluate a script
-    pub fn eval<T: AsRef<[u8]>>(&self, script: T) -> Result<()> {
+    pub fn eval<T: AsRef<[u8]>>(&self, script: T) -> Result<&Self> {
         let script = script.as_ref();
 
         let ret = unsafe {
@@ -174,22 +156,22 @@ impl Context {
 
         handle_error!(ret, self);
 
-        Ok(())
+        Ok(self)
     }
 
-    pub fn compile(&self, flags: u32) -> Result<&Self> {
-        let ret = unsafe { duk::duk_pcompile(self.inner, flags) };
+    pub fn compile(&self, flags: DUK_COMPILE) -> Result<&Self> {
+        let ret = unsafe { duk::duk_pcompile(self.inner, flags.bits()) };
         handle_error!(ret, self);
 
         Ok(self)
     }
 
-    pub fn compile_string<T: AsRef<[u8]>>(&self, content: T, flags: u32) -> Result<()> {
+    pub fn compile_string<T: AsRef<[u8]>>(&self, content: T, flags: DUK_COMPILE) -> Result<()> {
         let content = content.as_ref();
         let len = content.len();
 
         let ret = unsafe {
-            duk::duk_pcompile_lstring(self.inner, flags, content.as_ptr() as *const i8, len)
+            duk::duk_pcompile_lstring(self.inner, flags.bits(), content.as_ptr() as *const i8, len)
         };
         handle_error!(ret, self);
 
@@ -200,7 +182,7 @@ impl Context {
         &self,
         content: T,
         file_name: &str,
-        flags: u32,
+        flags: DUK_COMPILE,
     ) -> Result<()> {
         let content = content.as_ref();
         let len = content.len();
@@ -209,7 +191,7 @@ impl Context {
             duk::duk_push_lstring(self.inner, file_name.as_ptr() as *const i8, file_name.len());
             duk::duk_pcompile_lstring_filename(
                 self.inner,
-                flags,
+                flags.bits(),
                 content.as_ptr() as *const i8,
                 len,
             )
@@ -261,7 +243,8 @@ impl Context {
     }
 
     pub fn push_string<T: AsRef<[u8]>>(&self, value: T) -> &Self {
-        unsafe { duk::duk_push_string(self.inner, value.as_ref().as_ptr() as *const i8) };
+        let len = value.as_ref().len();
+        unsafe { duk::duk_push_lstring(self.inner, value.as_ref().as_ptr() as *const i8, len) };
         self
     }
 
@@ -638,6 +621,18 @@ pub mod tests {
             ctx.push_int(42);
             Ok(1)
         });
+
+        duk.call(0).unwrap();
+        assert_eq!(duk.get_int(-1).unwrap(), 42);
+    }
+
+    #[test]
+    fn context_push_function_args() {
+        let duk = Context::new().unwrap();
+        duk.push_function((1, |ctx: &Context| {
+            ctx.push_int(42);
+            Ok(1)
+        }));
 
         duk.call(0).unwrap();
         assert_eq!(duk.get_int(-1).unwrap(), 42);

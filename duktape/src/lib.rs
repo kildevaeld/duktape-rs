@@ -2,7 +2,8 @@ extern crate duktape_sys;
 #[macro_use]
 extern crate error_chain;
 extern crate typemap;
-
+#[macro_use]
+extern crate bitflags;
 mod callable;
 pub mod class;
 mod context;
@@ -16,6 +17,7 @@ pub use self::typemap::Key;
 
 pub mod prelude {
     pub use super::callable::Callable;
+    pub use super::class;
     pub use super::context::*;
     pub use super::types::*;
 }

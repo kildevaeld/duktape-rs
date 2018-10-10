@@ -3,7 +3,6 @@ extern crate error_chain;
 extern crate duktape;
 #[macro_use]
 extern crate lazy_static;
-extern crate duktape_sys;
 extern crate regex;
 
 mod commonjs;

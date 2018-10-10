@@ -43,7 +43,7 @@ pub fn eval_module<'a>(ctx: &'a duktape::Context, script: &[u8], module: &Object
         .concat(3)?;
 
     ctx.push(module.get::<_, Ref>("fileName")?);
-    ctx.compile(duktape_sys::DUK_COMPILE_EVAL)?.call(0)?;
+    ctx.compile(DUK_COMPILE_EVAL)?.call(0)?;
 
     let require = build_require(ctx, &module.get::<_, String>("id")?)?;
 
