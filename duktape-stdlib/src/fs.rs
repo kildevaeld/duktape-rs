@@ -51,7 +51,12 @@ pub fn init_file<'a>() -> class::Builder<'a> {
         (1, |ctx: &Context, this: &mut class::Instance| {
             let file = this.data_mut().get_mut::<FileKey>().unwrap();
 
-            let mut buffer = Vec::with_capacity(256);
+            let mut cap = 256;
+            if ctx.is(Type::Number, 0) {
+                cap = ctx.get(0)?;
+            }
+
+            let mut buffer = Vec::with_capacity(cap);
             file.read(&mut buffer).unwrap();
             ctx.push(buffer.as_slice());
 

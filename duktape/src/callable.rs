@@ -1,5 +1,6 @@
 use super::context::Context;
 use super::error::Result;
+use super::types::ToDuktape;
 use duktape_sys::*;
 use std::ffi::{c_void, CString};
 
@@ -80,5 +81,21 @@ impl<T: Fn(&Context) -> Result<i32>> Callable for T {
 
     fn call(&self, ctx: &Context) -> Result<i32> {
         self(ctx)
+    }
+}
+
+impl<T: 'static + Fn(&Context) -> Result<i32>> ToDuktape for T {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        let boxed: Box<dyn Callable> = Box::new(self);
+        unsafe { push_callable(ctx, boxed) };
+        Ok(())
+    }
+}
+
+impl<T: 'static + Fn(&Context) -> Result<i32>> ToDuktape for (i32, T) {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        let boxed: Box<dyn Callable> = Box::new(self);
+        unsafe { push_callable(ctx, boxed) };
+        Ok(())
     }
 }

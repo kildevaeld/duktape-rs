@@ -1,15 +1,26 @@
-use duktape::Context;
+use duktape::error::Result;
+use duktape::prelude::*;
 use rustyline::error::ReadlineError;
-use rustyline::Editor;
+use rustyline::{ColorMode, CompletionType, Config, EditMode, Editor};
 
-pub fn run(ctx: &Context) {
-    let mut rl = Editor::<()>::new();
+pub fn run(ctx: &Context) -> Result<()> {
+    let require: Object = ctx.get_global_string("require").getp()?;
+
+    require.set(b"\xFFmoduleId", "main.js");
+
+    let config = Config::builder()
+        .edit_mode(EditMode::Vi)
+        .completion_type(CompletionType::List)
+        .color_mode(ColorMode::Enabled)
+        .build();
+
+    let mut rl = Editor::<()>::with_config(config);
 
     if rl.load_history("history.txt").is_err() {
         println!("No previous history.");
     }
     loop {
-        let readline = rl.readline(">> ");
+        let readline = rl.readline("duk> ");
 
         match readline {
             Ok(line) => {
@@ -35,4 +46,6 @@ pub fn run(ctx: &Context) {
         }
     }
     rl.save_history("history.txt").unwrap();
+
+    Ok(())
 }

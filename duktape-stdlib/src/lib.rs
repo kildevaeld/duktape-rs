@@ -2,6 +2,7 @@ extern crate duktape;
 extern crate duktape_cjs;
 mod fs;
 mod io;
+mod process;
 
 use duktape::error::{ErrorKind, Result};
 use duktape::prelude::*;
@@ -14,6 +15,8 @@ pub static RUNTIME: &'static [u8] = include_bytes!("runtime.js");
 pub fn init(ctx: &Context, builder: &mut duktape_cjs::RequireBuilder) {
     ctx.eval(POLFILLS).unwrap();
     ctx.pop(1);
+
+    process::init_process(ctx).unwrap();
 
     builder
         .module("io", |ctx: &Context| {

@@ -9,3 +9,29 @@ console.log('rapper')
 test
 console.log('rapper')
 require('io').stdout.write('rapra')
+console.log('rapp')
+var test = 'test';
+console.log(test);
+function rapper() { \
+function rapper() { }
+function rapper() {\\ }
+\
+x
+sdsds
+const test = require('./test')
+process.cwd()
+console.log(process.cwd())
+const test = require('./test');
+console.log(test.hello)
+const fs = require('fs');
+let file = new fs.File('main.js');
+var file = new fs.File('main.js');
+var out = file.read(10);
+out = file.read(200);
+console.log(out)
+out = file.read(200);
+var file = new fs.File('main.js');
+const fs = require('fs');
+var file = new fs.File('main.js');
+out = file.read(200);
+var file = new fs.File('main.js');
