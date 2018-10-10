@@ -35,3 +35,4 @@ const fs = require('fs');
 var file = new fs.File('main.js');
 out = file.read(200);
 var file = new fs.File('main.js');
+const test = require('./test');

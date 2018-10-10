@@ -26,8 +26,7 @@ fn main() -> duktape_cjs::error::Result<()> {
     let args = env::args();
 
     if args.len() < 2 {
-        repl::run(&ctx); //println!("usage: duk <path>");
-        return Ok(());
+        return repl::run(&ctx);
     }
 
     let path = &args.collect::<Vec<String>>()[1];
@@ -35,7 +34,7 @@ fn main() -> duktape_cjs::error::Result<()> {
     ctx.push_global_stash();
 
     ctx.pop(1);
-    let module = duktape_cjs::eval_main_script(&mut ctx, path, data)?;
-    println!("{}", module);
+    duktape_cjs::eval_main_script(&mut ctx, path, data)?;
+
     Ok(())
 }

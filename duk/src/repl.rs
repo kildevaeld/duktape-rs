@@ -1,24 +1,30 @@
-use duktape::error::Result;
 use duktape::prelude::*;
+use duktape_cjs::error::Result;
 use rustyline::error::ReadlineError;
 use rustyline::{ColorMode, CompletionType, Config, EditMode, Editor};
+use std::env;
 
 pub fn run(ctx: &Context) -> Result<()> {
     let require: Object = ctx.get_global_string("require").getp()?;
 
-    require.set(b"\xFFmoduleId", "main.js");
+    require.set(
+        b"\xFFmoduleId",
+        format!("{}/___repl.js", env::current_dir()?.to_str().unwrap()),
+    );
 
     let config = Config::builder()
         .edit_mode(EditMode::Vi)
         .completion_type(CompletionType::List)
         .color_mode(ColorMode::Enabled)
+        .history_ignore_dups(true)
         .build();
 
     let mut rl = Editor::<()>::with_config(config);
 
-    if rl.load_history("history.txt").is_err() {
+    if rl.load_history("duk_history.txt").is_err() {
         println!("No previous history.");
     }
+
     loop {
         let readline = rl.readline("duk> ");
 
@@ -32,11 +38,11 @@ pub fn run(ctx: &Context) -> Result<()> {
                 //println!("Line: {}", line);
             }
             Err(ReadlineError::Interrupted) => {
-                println!("CTRL-C");
+                //println!("CTRL-C");
                 break;
             }
             Err(ReadlineError::Eof) => {
-                println!("CTRL-D");
+                //println!("CTRL-D");
                 break;
             }
             Err(err) => {
@@ -45,7 +51,7 @@ pub fn run(ctx: &Context) -> Result<()> {
             }
         }
     }
-    rl.save_history("history.txt").unwrap();
+    rl.save_history("duk_history.txt").unwrap();
 
     Ok(())
 }
