@@ -72,15 +72,16 @@ fn main() -> Result<()> {
     var greeter = new Greeter();
 
     var greeting = greeter.greet('me');
-
     greeting + '!';
-    
     "#,
         )?
         .get(-1)?;
 
     assert_eq!(greeting, "Hello me!");
     println!("{}", greeting);
+
+    let greeter: Object = ctx.get_global_string("Greeter").construct(0)?.getp()?;
+    println!("{}", greeter.call::<_, _, String>("greet", "eevee")?);
 
     Ok(())
 }

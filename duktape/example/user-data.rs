@@ -35,5 +35,8 @@ fn main() -> Result<()> {
     assert_eq!(greeting, "Hello me!");
     println!("{}", greeting);
 
+    let greeter: Object = ctx.get_global_string("Greeter").construct(0)?.getp();
+    println!("{}", greeter.call::<String>("greet", "eevee")?);
+
     Ok(())
 }
