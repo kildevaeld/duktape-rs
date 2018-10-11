@@ -17,7 +17,7 @@ fn main() -> duktape_cjs::error::Result<()> {
 
     let mut require = duktape_cjs::RequireBuilder::new();
 
-    duktape_stdlib::init(&ctx, &mut require);
+    duktape_stdlib::init(&ctx, &mut require, duktape_stdlib::Modules::default());
 
     duktape_cjs::register(&ctx, require)?;
 
