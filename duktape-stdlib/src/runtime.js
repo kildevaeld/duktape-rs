@@ -18,13 +18,13 @@
             write(io.stdout, 'debug', _slice.call(arguments));
         },
         info() {
-            write(io.stdout, 'debug', _slice.call(arguments));
+            write(io.stdout, 'info', _slice.call(arguments));
         },
         warn() {
-            write(io.stderr, 'debug', _slice.call(arguments));
+            write(io.stderr, 'warn', _slice.call(arguments));
         },
         error() {
-            write(io.stderr, 'debug', _slice.call(arguments))
+            write(io.stderr, 'error', _slice.call(arguments))
         }
     });
 
