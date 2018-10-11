@@ -74,12 +74,11 @@ macro_rules! handle_error {
 macro_rules! check_impl {
     ($ret:ident, $func:ident) => {
         pub fn $ret (&self, index:Idx) -> bool {
-            unsafe {
-                if duk::$func(self.inner, index) == 1 {
-                    true
-                } else {
-                    false
-                }
+            match unsafe {
+                duk::$func(self.inner, index)
+            } {
+                1 => true,
+                _ => false,
             }
         }
     };
@@ -350,12 +349,9 @@ impl Context {
     }
 
     pub fn is_valid_index(&self, index: i32) -> bool {
-        unsafe {
-            if duk::duk_is_valid_index(self.inner, index) == 1 {
-                true
-            } else {
-                false
-            }
+        match unsafe { duk::duk_is_valid_index(self.inner, index) } {
+            1 => true,
+            _ => false,
         }
     }
 
@@ -407,18 +403,16 @@ impl Context {
     }
 
     pub fn has_prop_string<T: AsRef<[u8]>>(&self, index: i32, name: T) -> bool {
-        unsafe {
-            if duk::duk_has_prop_lstring(
+        match unsafe {
+            duk::duk_has_prop_lstring(
                 self.inner,
                 index,
                 name.as_ref().as_ptr() as *const i8,
                 name.as_ref().len(),
-            ) == 1
-            {
-                true
-            } else {
-                false
-            }
+            )
+        } {
+            1 => true,
+            _ => false,
         }
     }
 
@@ -534,22 +528,14 @@ impl Context {
         self
     }
 
-    // // References
-
-    // pub fn get_ref<'a>(&'a self, idx: Idx) -> Result<Ref<'a>> {
-    //     self.dup(idx);
-    //     let r = unsafe { privates::make_ref(self.inner) };
-    //     self.pop(1);
-    //     Ok(Ref { ctx: self, r })
-    // }
-
-    // pub fn push_ref(&self, refer: &Ref) -> &Self {
-    //     unsafe { privates::push_ref(self.inner, refer.r) };
-    //     self
-    // }
+    pub fn instance_of(&self, this: Idx, that: Idx) -> bool {
+        match unsafe { duk::duk_instanceof(self.inner, this, that) } {
+            1 => true,
+            _ => false,
+        }
+    }
 
     // Class
-
     pub fn push_class(&self, builder: Builder) -> Result<&Self> {
         let ret = unsafe { push_class_builder(self, builder) };
         match ret {
