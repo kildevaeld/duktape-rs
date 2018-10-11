@@ -17,6 +17,7 @@ impl<'a> Object<'a> {
         Object { refer }
     }
 
+    /// Get property
     pub fn get<T: AsRef<[u8]>, V: FromDuktape<'a>>(&self, prop: T) -> Result<V> {
         self.refer.push();
         self.refer.ctx.get_prop_string(-1, prop);
@@ -25,6 +26,7 @@ impl<'a> Object<'a> {
         Ok(ret)
     }
 
+    /// Set property
     pub fn set<T: AsRef<[u8]>, V: ToDuktape>(&self, prop: T, value: V) -> &Self {
         self.refer.push();
         value.to_context(self.refer.ctx).unwrap();
@@ -33,6 +35,7 @@ impl<'a> Object<'a> {
         self
     }
 
+    /// Check if object has property
     pub fn has<T: AsRef<[u8]>>(&self, prop: T) -> bool {
         self.refer.push();
         let ret = self.refer.ctx.has_prop_string(-1, prop);
@@ -40,6 +43,7 @@ impl<'a> Object<'a> {
         ret
     }
 
+    /// Delete property
     pub fn del<T: AsRef<[u8]>>(&mut self, prop: T) -> &mut Self {
         self.refer.push();
         self.refer.ctx.del_prop_string(-1, prop.as_ref());
@@ -47,10 +51,12 @@ impl<'a> Object<'a> {
         self
     }
 
+    /// Cast object to a reference
     pub fn as_ref(&self) -> &'a Ref {
         &self.refer
     }
 
+    /// Call a method on the object
     pub fn call<T: AsRef<str>, A: ArgumentList, R: FromDuktape<'a>>(
         &self,
         fn_name: T,
@@ -71,6 +77,7 @@ impl<'a> Object<'a> {
         ret
     }
 
+    /// Construct a property on the object
     pub fn construct<T: AsRef<str>, A: ArgumentList>(&self, fn_name: T, args: A) -> Result<Object> {
         self.refer.push();
         if !self.refer.ctx.has_prop_string(-1, fn_name.as_ref()) {
@@ -92,6 +99,7 @@ impl<'a> Object<'a> {
         o
     }
 
+    /// Return keys
     pub fn keys(&'a self) -> Array<'a> {
         let o = self
             .refer
@@ -103,6 +111,7 @@ impl<'a> Object<'a> {
         o.call::<_, _, Array>("keys", self).unwrap()
     }
 
+    /// Get a object iterator
     pub fn iter(&'a self) -> impl iter::Iterator<Item = (&'a str, Ref<'a>)> {
         ObjectIterator::new(self, self.keys())
     }
@@ -238,4 +247,48 @@ impl<'a> iter::Iterator for ObjectIterator<'a> {
 
         Some((key, value))
     }
+}
+
+#[cfg(test)]
+pub mod tests {
+
+    use super::super::super::context::{Context, Type};
+    use super::Object;
+
+    #[test]
+    fn create_object() {
+        let duk = Context::new().unwrap();
+        let o: Object = duk.create().unwrap();
+        assert_eq!(o.as_ref().get_type(), Type::Object);
+    }
+
+    #[test]
+    fn object_keys() {
+        let duk = Context::new().unwrap();
+        let o: Object = duk.create().unwrap();
+        o.set("prop1", 1).set("prop2", 2);
+        let keys = o.keys();
+
+        assert_eq!(2, keys.len());
+        assert_eq!(keys.get::<&str>(0).unwrap(), "prop1");
+        assert_eq!(keys.get::<&str>(1).unwrap(), "prop2");
+    }
+
+    #[test]
+    fn object_iterator() {
+        let duk = Context::new().unwrap();
+        let o: Object = duk.create().unwrap();
+        o.set("prop1", "rap").set("prop2", 2);
+
+        let mut iter = o.iter();
+
+        let ret = iter.next().unwrap();
+        assert_eq!(ret.0, "prop1");
+        assert_eq!(ret.1.get::<&str>().unwrap(), "rap");
+
+        let ret = iter.next().unwrap();
+        assert_eq!(ret.0, "prop2");
+        assert_eq!(ret.1.get::<i32>().unwrap(), 2);
+    }
+
 }
