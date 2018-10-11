@@ -1,9 +1,8 @@
 extern crate duktape;
-use duktape::error::Result;
 use duktape::prelude::*;
 
-fn main() -> Result<()> {
-    let mut ctx = Context::new()?;
+fn main() -> DukResult<()> {
+    let ctx = Context::new()?;
 
     let mut builder = class::build();
 
@@ -11,7 +10,7 @@ fn main() -> Result<()> {
 
     builder.method(
         "greet",
-        (1, |ctx: &Context, this: &mut class::Instance| {
+        (1, |ctx: &Context, _this: &mut class::Instance| {
             let name = ctx.get::<String>(0)?;
             ctx.push(format!("Hello {}", name))?;
             Ok(1)
