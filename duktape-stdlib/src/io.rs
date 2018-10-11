@@ -105,7 +105,7 @@ pub fn init_io(ctx: &Context) -> Result<i32> {
             let reader = this.data_mut().get_mut::<ReaderKey>().unwrap();
             let mut st = String::new();
             reader.read_line(&mut st).unwrap();
-            ctx.push(st);
+            ctx.push(st)?;
             Ok(1)
         })
         .inherit(reader_ctor);
@@ -119,7 +119,7 @@ pub fn init_io(ctx: &Context) -> Result<i32> {
     module.set("stderr", module.construct("Stderr", ())?);
     module.set("stdin", module.construct("Stdin", ())?);
 
-    ctx.push(module);
+    ctx.push(module)?;
 
     Ok(1)
 }
