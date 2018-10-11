@@ -5,7 +5,7 @@ use super::{ArgumentList, FromDuktape, ToDuktape};
 use std::iter;
 
 pub struct Array<'a> {
-    refer: Ref<'a>,
+    pub(crate) refer: Ref<'a>,
 }
 
 impl<'a> Array<'a> {
