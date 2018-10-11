@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 duktape = { path = "../duktape" }
 duktape-cjs = { path = "../duktape-cjs" }
+bitflags = "1.0.4"
