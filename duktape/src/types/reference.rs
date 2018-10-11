@@ -39,6 +39,14 @@ impl<'a> Ref<'a> {
         unsafe { push_ref(self.ctx.inner, self.refer) };
         self
     }
+
+    pub fn instance_of(&self, reference: &Ref) -> bool {
+        self.push();
+        reference.push();
+        let ret = self.ctx.instance_of(-2, -1);
+        self.ctx.pop(2);
+        ret
+    }
 }
 
 impl<'a> ToDuktape for Ref<'a> {
