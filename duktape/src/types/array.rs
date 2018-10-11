@@ -1,8 +1,7 @@
-use super::super::context::Context;
+use super::super::context::{Constructable, Context};
 use super::super::error::{ErrorKind, Result};
 use super::reference::Ref;
-use super::{FromDuktape, ToDuktape};
-
+use super::{ArgumentList, FromDuktape, ToDuktape};
 use std::iter;
 
 pub struct Array<'a> {
@@ -60,6 +59,31 @@ impl<'a> FromDuktape<'a> for Array<'a> {
         let re = Ref::new(ctx, index);
 
         Ok(Array::new(re))
+    }
+}
+
+impl<'a> Constructable<'a> for Array<'a> {
+    fn construct(duk: &'a Context) -> Result<Self> {
+        duk.push_array();
+        let o = match Array::from_context(duk, -1) {
+            Ok(o) => o,
+            Err(e) => {
+                duk.pop(1);
+                return Err(e);
+            }
+        };
+        duk.pop(1);
+        Ok(o)
+    }
+}
+
+impl<'a> ArgumentList for Array<'a> {
+    fn len(&self) -> i32 {
+        1
+    }
+
+    fn push_args(self, ctx: &Context) -> Result<()> {
+        self.to_context(ctx)
     }
 }
 
