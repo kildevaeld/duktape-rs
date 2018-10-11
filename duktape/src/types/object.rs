@@ -1,9 +1,7 @@
 use super::super::context::{Constructable, Context, Idx, Type};
 use super::super::error::{ErrorKind, Result};
-use super::argument_list::ArgumentList;
-use super::function::Function;
 use super::reference::Ref;
-use super::{Array, FromDuktape, ToDuktape};
+use super::{ArgumentList, Array, FromDuktape, Function, ToDuktape};
 use std::convert::From;
 use std::fmt;
 use std::iter;
@@ -173,6 +171,21 @@ impl<'a> From<Object<'a>> for Result<Function<'a>> {
             return Ok(Function::new(func.refer.clone()));
         }
         Err(ErrorKind::TypeError("could not interpret object as function".to_owned()).into())
+    }
+}
+
+impl<'a> From<Array<'a>> for Object<'a> {
+    fn from(array: Array<'a>) -> Self {
+        Object::new(array.refer.clone())
+    }
+}
+
+impl<'a> From<Object<'a>> for Result<Array<'a>> {
+    fn from(obj: Object<'a>) -> Self {
+        if obj.as_ref().is(Type::Array) {
+            return Ok(Array::new(obj.refer.clone()));
+        }
+        Err(ErrorKind::TypeError("could not interpret object as array".to_owned()).into())
     }
 }
 
