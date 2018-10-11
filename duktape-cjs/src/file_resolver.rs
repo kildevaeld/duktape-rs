@@ -71,3 +71,7 @@ impl ModuleResolver for FileResolver {
         Ok(id.to_str().unwrap().to_owned())
     }
 }
+
+pub fn file_resolver() -> Box<dyn ModuleResolver> {
+    return Box::new(FileResolver);
+}

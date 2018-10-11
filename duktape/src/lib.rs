@@ -19,6 +19,8 @@ pub mod prelude {
     pub use super::callable::Callable;
     pub use super::class;
     pub use super::context::*;
+    pub use super::error::Error as DukError;
+    pub use super::error::Result as DukResult;
     pub use super::types::*;
 }
 

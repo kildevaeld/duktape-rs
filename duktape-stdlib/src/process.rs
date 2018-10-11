@@ -9,7 +9,7 @@ pub fn init_process(ctx: &Context) -> Result<()> {
 
     process.set("cwd", |ctx: &Context| {
         let cwd = env::current_dir()?;
-        ctx.push(cwd.to_str());
+        ctx.push(cwd.to_str())?;
         Ok(1)
     });
 

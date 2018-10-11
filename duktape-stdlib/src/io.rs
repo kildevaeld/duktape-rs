@@ -63,7 +63,7 @@ pub fn init_reader<'a>() -> duktape::class::Builder<'a> {
 
             let mut buffer = Vec::with_capacity(256);
             reader.read(&mut buffer).unwrap();
-            ctx.push(buffer.as_slice());
+            ctx.push(buffer.as_slice())?;
             Ok(1)
         }),
     );
@@ -104,7 +104,7 @@ pub fn init_io(ctx: &Context) -> Result<i32> {
         .method("readLine", |ctx: &Context, this: &mut class::Instance| {
             let reader = this.data_mut().get_mut::<ReaderKey>().unwrap();
             let mut st = String::new();
-            reader.read_line(&mut st).unwrap();
+            reader.read_line(&mut st)?;
             ctx.push(st)?;
             Ok(1)
         })

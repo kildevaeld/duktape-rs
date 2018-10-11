@@ -58,7 +58,7 @@ pub fn init_file<'a>() -> class::Builder<'a> {
 
             let mut buffer = Vec::with_capacity(cap);
             file.read(&mut buffer).unwrap();
-            ctx.push(buffer.as_slice());
+            ctx.push(buffer.as_slice())?;
 
             Ok(1)
         }),

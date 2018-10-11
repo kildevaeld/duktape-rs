@@ -4,7 +4,6 @@ use super::method::{push_method, Instance, Method, CTOR_KEY, DATA_KEY};
 use duktape_sys as duk;
 use std::collections::HashMap;
 use std::ffi::c_void;
-use std::ops::Fn;
 
 pub enum Prototype {
     Method(Box<dyn Method>),

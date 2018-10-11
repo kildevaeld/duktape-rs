@@ -122,14 +122,14 @@ impl RequireBuilder {
 pub struct Require;
 
 impl Require {
-    fn push_module(&self, ctx: &Context, id: &str) -> Result<()> {
-        ctx.push_object()
-            .push(id)?
-            .put_prop_string(-2, "id")
-            .push_object()
-            .put_prop_string(-2, "exports");
-        Ok(())
-    }
+    // fn push_module(&self, ctx: &Context, id: &str) -> Result<()> {
+    //     ctx.push_object()
+    //         .push(id)?
+    //         .put_prop_string(-2, "id")
+    //         .push_object()
+    //         .put_prop_string(-2, "exports");
+    //     Ok(())
+    // }
 
     fn load_module<'a>(&self, id: &str, ctx: &'a Context, repo: &CommonJS) -> Result<Object<'a>> {
         let caps = PROTOCOL_RE.captures(id).unwrap();
@@ -206,7 +206,7 @@ impl Require {
         let found = found.unwrap();
 
         let module = internal::push_module_object(ctx, id, false).unwrap();
-        module.clone().to_context(ctx);
+        module.clone().to_context(ctx)?;
         let top = ctx.top();
 
         found.module.call(ctx)?;

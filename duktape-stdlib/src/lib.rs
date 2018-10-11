@@ -7,7 +7,6 @@ mod fs;
 mod io;
 mod process;
 
-use duktape::error::{ErrorKind, Result};
 use duktape::prelude::*;
 use duktape_cjs::require;
 
@@ -42,19 +41,6 @@ pub fn init(ctx: &Context, builder: &mut duktape_cjs::RequireBuilder, config: bu
             Ok(1)
         });
     }
-
-    // builder
-    //     .module("io", |ctx: &Context| {
-    //         return io::init_io(ctx);
-    //     })
-    //     .module("fs", |ctx: &Context| {
-    //         return fs::init_fs(ctx);
-    //     })
-    //     .module("utils", |ctx: &Context| {
-    //         let module: Object = ctx.get(-1)?; //require::push_module_object(ctx, "utils", false).unwrap();
-    //         require::eval_module(ctx, UTILS, &module).unwrap();
-    //         Ok(1)
-    //     });
 }
 
 pub fn init_runtime(ctx: &Context) {
@@ -63,12 +49,4 @@ pub fn init_runtime(ctx: &Context) {
     ctx.call(0).unwrap();
 
     ctx.push_global_object().call(1).unwrap();
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
 }
