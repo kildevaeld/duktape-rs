@@ -3,9 +3,10 @@ use super::super::error::{ErrorKind, Result};
 use super::argument_list::ArgumentList;
 use super::function::Function;
 use super::reference::Ref;
-use super::{FromDuktape, ToDuktape};
+use super::{Array, FromDuktape, ToDuktape};
 use std::convert::From;
 use std::fmt;
+use std::iter;
 
 pub struct Object<'a> {
     refer: Ref<'a>,
@@ -90,6 +91,21 @@ impl<'a> Object<'a> {
         self.refer.ctx.pop(1);
         o
     }
+
+    pub fn keys(&'a self) -> Array<'a> {
+        let o = self
+            .refer
+            .ctx
+            .get_global_string("Object")
+            .getp::<Object>()
+            .unwrap();
+
+        o.call::<_, _, Array>("keys", self).unwrap()
+    }
+
+    pub fn iter(&'a self) -> impl iter::Iterator<Item = (&'a str, Ref<'a>)> {
+        ObjectIterator::new(self, self.keys())
+    }
 }
 
 impl<'a> ToDuktape for Object<'a> {
@@ -161,6 +177,16 @@ impl<'a> ArgumentList for Object<'a> {
     }
 }
 
+impl<'a> ArgumentList for &'a Object<'a> {
+    fn len(&self) -> i32 {
+        1
+    }
+
+    fn push_args(self, ctx: &Context) -> Result<()> {
+        self.to_context(ctx)
+    }
+}
+
 impl<'a> fmt::Display for Object<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.refer.ctx.get_global_string("JSON");
@@ -171,5 +197,45 @@ impl<'a> fmt::Display for Object<'a> {
             .call::<_, _, String>("stringify", (clone, (), "  "))
             .unwrap();
         write!(f, "{}", json)
+    }
+}
+
+struct ObjectIterator<'a> {
+    object: &'a Object<'a>,
+    keys: Array<'a>,
+    index: u32,
+}
+
+impl<'a> ObjectIterator<'a> {
+    pub(crate) fn new(object: &'a Object<'a>, keys: Array<'a>) -> ObjectIterator<'a> {
+        ObjectIterator {
+            object,
+            keys,
+            index: 0,
+        }
+    }
+}
+
+impl<'a> iter::Iterator for ObjectIterator<'a> {
+    type Item = (&'a str, Ref<'a>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.keys.len() as u32 {
+            return None;
+        }
+
+        let key: &str = match self.keys.get(self.index) {
+            Ok(m) => m,
+            Err(_) => return None,
+        };
+
+        let value = match self.object.get(key) {
+            Ok(m) => m,
+            Err(_) => return None,
+        };
+
+        self.index += 1;
+
+        Some((key, value))
     }
 }
