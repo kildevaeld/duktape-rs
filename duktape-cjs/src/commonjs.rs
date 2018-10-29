@@ -159,6 +159,10 @@ impl Require {
             Err(e) => return Err(ErrorKind::TypeError(format!("{}", e)).into()),
         };
 
+        if self.has_cache(ctx, id)? {
+            return self.get_cache(ctx, id);
+        }
+
         let path = Path::new(&id);
 
         let module = match internal::push_module_object(ctx, &path, false) {
@@ -203,6 +207,10 @@ impl Require {
             return Err(ErrorKind::TypeError(format!("could not find module: '{}'", id)).into());
         }
 
+        if self.has_cache(ctx, id)? {
+            return self.get_cache(ctx, id);
+        }
+
         let found = found.unwrap();
 
         let module = internal::push_module_object(ctx, id, false).unwrap();
@@ -218,32 +226,37 @@ impl Require {
         Ok(module)
     }
 
-    // fn has_cache(&self, ctx: &Context, id: &str) -> bool {
-    //     ctx.push_global_stash()
-    //         .get_prop_string(-1, KEY)
-    //         .get_prop_string(-1, "cache");
-    //     let ret = ctx.has_prop_string(-1, id);
-    //     ctx.pop(3);
-    //     ret
-    // }
+    fn has_cache(&self, ctx: &Context, id: &str) -> Result<bool> {
+        let cache = ctx
+            .push_global_stash()
+            .getp::<Object>()?
+            .get::<_, Object>(KEY)?
+            .get::<_, Object>("cache")?;
 
-    // fn get_cache(&self, ctx: &Context, id: &str) -> Result<Object> {
-    //     ctx.push_global_stash()
-    //         .get_prop_string(-1, KEY)
-    //         .get_prop_string(-1, "cache");
+        Ok(cache.has(id))
+    }
 
-    //     if !ctx.has_prop_string(-1, id) {
-    //         ctx.pop(3);
-    //     } else {
-    //         ctx.get_prop_string(-1, id);
-    //     }
+    fn get_cache<'a>(&self, ctx: &'a Context, id: &str) -> Result<Object<'a>> {
+        let cache = ctx
+            .push_global_stash()
+            .getp::<Object>()?
+            .get::<_, Object>(KEY)?
+            .get::<_, Object>("cache")?;
 
-    //     ctx.getp()
-    // }
+        Ok(cache.get::<_, Object>(id).unwrap())
+    }
 
-    // fn set_cache(&self, ctx: &Context, id: &str, index: i32) -> Result<()> {
-    //     Ok(())
-    // }
+    fn set_cache(&self, ctx: &Context, id: &str, module: &Object) -> Result<()> {
+        let cache = ctx
+            .push_global_stash()
+            .getp::<Object>()?
+            .get::<_, Object>(KEY)?
+            .get::<_, Object>("cache")?;
+
+        cache.set(id, module);
+
+        Ok(())
+    }
 
     // fn del_cache(&self, ctx: &Context, id: &str) -> Result<()> {
     //     Ok(())
@@ -281,6 +294,8 @@ impl Callable for Require {
                 "module does not have a 'exports' field"
             )));
         }
+
+        self.set_cache(ctx, &id, &module)?;
 
         module.get::<_, Ref>("exports")?.push();
 
