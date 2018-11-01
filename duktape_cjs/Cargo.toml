@@ -1,5 +1,5 @@
 [package]
-name = "duktape-cjs"
+name = "duktape_cjs"
 version = "0.1.0"
 authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"

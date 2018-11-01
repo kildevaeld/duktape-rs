@@ -5,7 +5,7 @@ authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-duktape-sys = { path = "../duktape-sys" }
+duktape_sys = { path = "../duktape_sys" }
 error-chain = "0.12"
 typemap = "0.3"
 bitflags = "0.8"

@@ -1,9 +1,9 @@
 [workspace]
 
 members = [
-    "duktape-sys",
+    "duktape_sys",
     "duktape",
-    "duktape-cjs",
-    "duktape-stdlib",
+    "duktape_cjs",
+    "duktape_stdlib",
     "duk"
 ]

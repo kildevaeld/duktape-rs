@@ -6,8 +6,8 @@ edition = "2018"
 
 [dependencies]
 duktape = { path = "../duktape" }
-duktape-cjs = { path = "../duktape-cjs" }
-duktape-stdlib = {path = "../duktape-stdlib" }
+duktape_cjs = { path = "../duktape_cjs" }
+duktape_stdlib = {path = "../duktape_stdlib" }
 log = "0.4"
 env_logger = "0.5.13"
 rustyline = "2.1.0"

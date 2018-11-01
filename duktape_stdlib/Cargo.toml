@@ -1,10 +1,10 @@
 [package]
-name = "duktape-stdlib"
+name = "duktape_stdlib"
 version = "0.1.0"
 authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
 
 [dependencies]
 duktape = { path = "../duktape" }
-duktape-cjs = { path = "../duktape-cjs" }
+duktape_cjs = { path = "../duktape_cjs" }
 bitflags = "1.0.4"
