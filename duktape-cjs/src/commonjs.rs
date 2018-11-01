@@ -159,8 +159,8 @@ impl Require {
             Err(e) => return Err(ErrorKind::TypeError(format!("{}", e)).into()),
         };
 
-        if self.has_cache(ctx, id)? {
-            return self.get_cache(ctx, id);
+        if self.has_cache(ctx, &id)? {
+            return self.get_cache(ctx, &id);
         }
 
         let path = Path::new(&id);
