@@ -14,7 +14,7 @@ impl<'a> Function<'a> {
         Function { refer }
     }
 
-    pub fn call<Args: ArgumentList, T: FromDuktape<'a>>(&mut self, args: Args) -> Result<T> {
+    pub fn call<Args: ArgumentList, T: FromDuktape<'a>>(&self, args: Args) -> Result<T> {
         self.refer.push();
         let len = args.len();
         args.push_args(self.refer.ctx)?;
