@@ -1,5 +1,5 @@
 extern crate bindgen;
-extern crate gcc;
+extern crate cc;
 
 use std::env;
 use std::path::PathBuf;
@@ -20,7 +20,11 @@ fn main() {
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
 
-    gcc::Build::new()
+    cc::Build::new()
         .file("duktape-2.3.0/src/duktape.c")
+        .flag_if_supported("-fomit-frame-pointer")
+        .flag_if_supported("-fstrict-aliasing")
+        // .flag_if_supported("-fprofile-generate")
+        .opt_level(2)
         .compile("libduktape.a");
 }
