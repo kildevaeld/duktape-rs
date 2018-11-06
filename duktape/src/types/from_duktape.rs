@@ -1,9 +1,9 @@
 use super::super::{
     error::{ErrorKind, Result},
-    Context, Idx, Type,
+    Context, Enumerate, Idx, Type,
 };
 #[cfg(feature = "value-rs")]
-use value::{chrono::Datelike, chrono::Timelike, Date, DateTime, Number, ToValue, Value};
+use value::{Map, Number, Value};
 
 pub trait FromDuktape<'de>: Sized {
     fn from_context(ctx: &'de Context, index: Idx) -> Result<Self>;
@@ -86,6 +86,8 @@ impl<'de> FromDuktape<'de> for Value {
             Type::String => Value::String(ctx.get::<String>(idx)?),
             Type::Function => Value::Bool(ctx.get::<bool>(idx)?),
             Type::Number => Value::Number(Number::from_f64(ctx.get_number(idx)?)),
+            Type::Object => pull_object(ctx, idx)?,
+            Type::Array => pull_array(ctx, idx)?,
             _ => bail!(ErrorKind::TypeError(format!(
                 "expected string, got: {:?}",
                 ctx.get_type(idx)
@@ -94,4 +96,35 @@ impl<'de> FromDuktape<'de> for Value {
 
         Ok(val)
     }
+}
+
+#[cfg(feature = "value-rs")]
+#[inline]
+fn pull_object(ctx: &Context, idx: Idx) -> Result<Value> {
+    ctx.enumerator(idx, Enumerate::OWN_PROPERTIES_ONLY)?;
+    let mut map = Map::new();
+    while ctx.next(-1, true)? {
+        let key = ctx.get_string(-1)?;
+        let value = Value::from_context(ctx, -2)?;
+        map.insert(key.to_owned(), value);
+        ctx.pop(2);
+    }
+
+    ctx.pop(1);
+    Ok(Value::Object(map))
+}
+
+#[cfg(feature = "value-rs")]
+#[inline]
+fn pull_array(ctx: &Context, idx: Idx) -> Result<Value> {
+    ctx.enumerator(idx, Enumerate::ARRAY_INDICES_ONLY)?;
+    let mut map = Vec::new();
+    while ctx.next(-1, true)? {
+        let value = Value::from_context(ctx, -2)?;
+        map.push(value);
+        ctx.pop(2);
+    }
+
+    ctx.pop(1);
+    Ok(Value::Array(map))
 }

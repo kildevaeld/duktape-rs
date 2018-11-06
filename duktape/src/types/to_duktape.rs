@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::ffi::c_void;
 use std::mem;
 #[cfg(feature = "value-rs")]
-use value::{chrono::Datelike, chrono::Timelike, Date, DateTime, Number, ToValue, Value};
+use value::{chrono::Datelike, chrono::Timelike, Date, DateTime, Number, Value};
 
 pub trait ToDuktape {
     fn to_context(self, ctx: &Context) -> Result<()>;
