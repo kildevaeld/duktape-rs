@@ -29,17 +29,33 @@ pub trait Constructable<'ctor>: Sized {
 }
 
 bitflags! {
-    pub flags DUK_COMPILE: u32 {
-        const DUK_COMPILE_EVAL = 8,
-        const DUK_COMPILE_FUNCTION = 16,
-        const DUK_COMPILE_STRICT = 32,
-        const DUK_COMPILE_SHEBANG = 64,
-        const DUK_COMPILE_SAFE = 128,
-        const DUK_COMPILE_NORESULT = 256,
-        const DUK_COMPILE_NOSOURCE = 512,
-        const DUK_COMPILE_STRLEN = 1024,
-        const DUK_COMPILE_NOFILENAME = 2048,
-        const DUK_COMPILE_FUNCEXPR = 4096,
+    pub struct Compile: u32 {
+        const EVAL = 8;
+        const FUNCTION = 16;
+        const STRICT = 32;
+        const SHEBANG = 64;
+        const SAFE = 128;
+        const NORESULT = 256;
+        const NOSOURCE = 512;
+        const STRLEN = 1024;
+        const NOFILENAME = 2048;
+        const FUNCEXPR = 4096;
+    }
+}
+
+bitflags! {
+    pub struct Enumerate: u32 {
+        /* Enumeration flags for duk_enum() */
+        const INCLUDE_NONENUMERABLE  =  (1 << 0);    /* enumerate non-numerable properties in addition to enumerable */
+        const INCLUDE_HIDDEN         =  (1 << 1);    /* enumerate hidden symbols too (in Duktape 1.x called internal properties) */
+        const INCLUDE_SYMBOLS        =  (1 << 2);    /* enumerate symbols */
+        const EXCLUDE_STRINGS        =  (1 << 3);    /* exclude strings */
+        const OWN_PROPERTIES_ONLY    =  (1 << 4);    /* don't walk prototype chain, only check own properties */
+        const ARRAY_INDICES_ONLY     =  (1 << 5);    /* only enumerate array indices */
+        /* XXX: misleading name */
+        const SORT_ARRAY_INDICES     =  (1 << 6);    /* sort array indices (applied to full enumeration result, including inherited array indices); XXX: misleading name */
+        const NO_PROXY_BEHAVIOR      = (1 << 7);    /* enumerate a proxy object itself without invoking proxy behavior */
+
     }
 }
 
@@ -158,14 +174,14 @@ impl Context {
         Ok(self)
     }
 
-    pub fn compile(&self, flags: DUK_COMPILE) -> Result<&Self> {
+    pub fn compile(&self, flags: Compile) -> Result<&Self> {
         let ret = unsafe { duk::duk_pcompile(self.inner, flags.bits()) };
         handle_error!(ret, self);
 
         Ok(self)
     }
 
-    pub fn compile_string<T: AsRef<[u8]>>(&self, content: T, flags: DUK_COMPILE) -> Result<()> {
+    pub fn compile_string<T: AsRef<[u8]>>(&self, content: T, flags: Compile) -> Result<()> {
         let content = content.as_ref();
         let len = content.len();
 
@@ -181,7 +197,7 @@ impl Context {
         &self,
         content: T,
         file_name: &str,
-        flags: DUK_COMPILE,
+        flags: Compile,
     ) -> Result<()> {
         let content = content.as_ref();
         let len = content.len();
@@ -561,6 +577,21 @@ impl Context {
         let ret = T::from_context(self, -1);
         self.pop(1);
         ret
+    }
+
+    pub fn enumerator(&self, index: Idx, flags: Enumerate) -> Result<()> {
+        unsafe { duk::duk_enum(self.inner, index, flags.bits()) };
+        Ok(())
+    }
+
+    pub fn next(&self, enum_idx: Idx, value: bool) -> Result<bool> {
+        let out = unsafe {
+            match duk::duk_next(self.inner, enum_idx, if value { 1 } else { 0 }) {
+                1 => true,
+                _ => false,
+            }
+        };
+        Ok(out)
     }
 }
 
