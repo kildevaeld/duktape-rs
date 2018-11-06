@@ -1,7 +1,9 @@
 use super::super::{
     error::{ErrorKind, Result},
-    Context, Idx,
+    Context, Idx, Type,
 };
+#[cfg(feature = "value-rs")]
+use value::{chrono::Datelike, chrono::Timelike, Date, DateTime, Number, ToValue, Value};
 
 pub trait FromDuktape<'de>: Sized {
     fn from_context(ctx: &'de Context, index: Idx) -> Result<Self>;
@@ -64,5 +66,32 @@ impl<'de> FromDuktape<'de> for &'de str {
             )));
         }
         ctx.get_string(index)
+    }
+}
+
+// #[cfg(feature = "value-rs")]
+// impl<'de> FromDuktape<'de> for Number {
+//     fn from_context(ctx: &'de Context, index: Idx) -> Result<Self> {
+
+//     }
+// }
+
+#[cfg(feature = "value-rs")]
+impl<'de> FromDuktape<'de> for Value {
+    fn from_context(ctx: &'de Context, idx: Idx) -> Result<Self> {
+        let ty = ctx.get_type(idx);
+
+        let val = match ty {
+            Type::Null => Value::Null,
+            Type::String => Value::String(ctx.get::<String>(idx)?),
+            Type::Function => Value::Bool(ctx.get::<bool>(idx)?),
+            Type::Number => Value::Number(Number::from_f64(ctx.get_number(idx)?)),
+            _ => bail!(ErrorKind::TypeError(format!(
+                "expected string, got: {:?}",
+                ctx.get_type(idx)
+            ))),
+        };
+
+        Ok(val)
     }
 }
