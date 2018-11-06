@@ -44,7 +44,7 @@ pub fn init(ctx: &Context, builder: &mut duktape_cjs::RequireBuilder, config: bu
 }
 
 pub fn init_runtime(ctx: &Context) {
-    ctx.compile_string(RUNTIME, DUK_COMPILE_EVAL).unwrap();
+    ctx.compile_string(RUNTIME, Compile::EVAL).unwrap();
 
     ctx.call(0).unwrap();
 
