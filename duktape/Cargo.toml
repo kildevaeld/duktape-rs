@@ -6,10 +6,16 @@ edition = "2018"
 
 [dependencies]
 duktape_sys = { path = "../duktape_sys" }
-error-chain = "0.12"
-typemap = "0.3"
-bitflags = "0.8"
+error-chain = "^0.12"
+typemap = "^0.3"
+bitflags = "^1.0.4"
+value = { git = "https://github.com/kildevaeld/value-rs", optional = true, features = ["datetime"] }
 
 [[example]]
 name = "class"
 path = "example/class.rs"
+
+
+[features]
+default = []
+value-rs = ["value"]
