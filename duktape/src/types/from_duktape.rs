@@ -82,15 +82,15 @@ impl<'de> FromDuktape<'de> for Value {
         let ty = ctx.get_type(idx);
 
         let val = match ty {
-            Type::Null => Value::Null,
+            Type::Null | Type::Undefined => Value::Null,
             Type::String => Value::String(ctx.get::<String>(idx)?),
-            Type::Function => Value::Bool(ctx.get::<bool>(idx)?),
+            Type::Boolean => Value::Bool(ctx.get::<bool>(idx)?),
             Type::Number => Value::Number(Number::from_f64(ctx.get_number(idx)?)),
             Type::Object => pull_object(ctx, idx)?,
             Type::Array => pull_array(ctx, idx)?,
             _ => bail!(ErrorKind::TypeError(format!(
-                "expected string, got: {:?}",
-                ctx.get_type(idx)
+                "type to value not implemented: {:?}",
+                ty
             ))),
         };
 
