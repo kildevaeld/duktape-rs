@@ -104,8 +104,8 @@ fn pull_object(ctx: &Context, idx: Idx) -> Result<Value> {
     ctx.enumerator(idx, Enumerate::OWN_PROPERTIES_ONLY)?;
     let mut map = Map::new();
     while ctx.next(-1, true)? {
-        let key = ctx.get_string(-1)?;
-        let value = Value::from_context(ctx, -2)?;
+        let key = ctx.get_string(-2)?;
+        let value = Value::from_context(ctx, -1)?;
         map.insert(key.to_owned(), value);
         ctx.pop(2);
     }
@@ -120,7 +120,7 @@ fn pull_array(ctx: &Context, idx: Idx) -> Result<Value> {
     ctx.enumerator(idx, Enumerate::ARRAY_INDICES_ONLY)?;
     let mut map = Vec::new();
     while ctx.next(-1, true)? {
-        let value = Value::from_context(ctx, -2)?;
+        let value = Value::from_context(ctx, -1)?;
         map.push(value);
         ctx.pop(2);
     }
