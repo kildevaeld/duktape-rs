@@ -1,6 +1,8 @@
 use super::super::context::Context;
 use super::super::error::Result;
 use super::ToDuktape;
+#[cfg(feature = "value-rs")]
+use value::Value;
 
 macro_rules! push_or_pop {
     ($dims:expr, $ctx: ident, $popc: expr) => {
@@ -26,6 +28,18 @@ impl<'a> ArgumentList for &'a str {
 
     fn push_args(self, ctx: &Context) -> Result<()> {
         ctx.push_string(self);
+        Ok(())
+    }
+}
+
+#[cfg(feature = "value-rs")]
+impl ArgumentList for Value {
+    fn len(&self) -> i32 {
+        1
+    }
+
+    fn push_args(self, ctx: &Context) -> Result<()> {
+        ctx.push(self)?;
         Ok(())
     }
 }
