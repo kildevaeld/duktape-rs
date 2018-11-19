@@ -69,6 +69,18 @@ impl<'de> FromDuktape<'de> for &'de str {
     }
 }
 
+impl<'de> FromDuktape<'de> for &'de [u8] {
+    fn from_context(ctx: &'de Context, index: Idx) -> Result<Self> {
+        if !ctx.is_buffer(index) {
+            bail!(ErrorKind::TypeError(format!(
+                "expected string, got: {:?}",
+                ctx.get_type(index)
+            )));
+        }
+        ctx.get_bytes(index)
+    }
+}
+
 // #[cfg(feature = "value-rs")]
 // impl<'de> FromDuktape<'de> for Number {
 //     fn from_context(ctx: &'de Context, index: Idx) -> Result<Self> {

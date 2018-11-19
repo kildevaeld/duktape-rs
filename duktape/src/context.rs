@@ -22,6 +22,7 @@ pub enum Type {
     Object,
     Array,
     Function,
+    Buffer,
 }
 
 pub trait Constructable<'ctor>: Sized {
@@ -264,8 +265,11 @@ impl Context {
     }
 
     pub fn push_bytes<T: AsRef<[u8]>>(&self, value: T) -> &Self {
-        let mut buffer = unsafe { duk::duk_push_fixed_buffer(self.inner, value.as_ref().len()) };
-        mem::replace(&mut buffer, value.as_ref().as_ptr() as *mut c_void);
+        let value = value.as_ref();
+        let buffer =
+            unsafe { duktape_sys::duk_push_fixed_buffer(self.inner, value.len()) } as *mut u8;
+
+        unsafe { ptr::copy(value.as_ptr(), buffer, value.len()) };
         self
     }
 
@@ -282,6 +286,18 @@ impl Context {
     push_impl!(push_global_stash, duk_push_global_stash);
     push_impl!(push_this, duk_push_this);
     push_impl!(push_current_function, duk_push_current_function);
+
+    pub fn is_buffer(&self, idx: Idx) -> bool {
+        unsafe {
+            if duk::duk_is_buffer(self.inner, idx) == 1 {
+                true
+            } else if duk::duk_is_buffer_data(self.inner, idx) == 1 {
+                true
+            } else {
+                false
+            }
+        }
+    }
 
     pub fn get_number(&self, idx: Idx) -> Result<f64> {
         if !self.is_number(idx) {
@@ -322,6 +338,26 @@ impl Context {
         let ostr = unsafe { duk::duk_get_string(self.inner, idx) };
         let s = unsafe { CStr::from_ptr(ostr).to_str()? }; //.to_string();
         Ok(s)
+    }
+
+    pub fn get_bytes(&self, idx: Idx) -> Result<&[u8]> {
+        if !self.is_buffer(idx) {
+            bail!(ErrorKind::TypeError(format!("buffer")));
+        }
+
+        let r = unsafe {
+            let mut len: usize = 0;
+            let ptr = if duk::duk_is_buffer(self.inner, idx) == 1 {
+                duk::duk_get_buffer(self.inner, idx, &mut len)
+            } else {
+                duk::duk_get_buffer_data(self.inner, idx, &mut len)
+            };
+            let r = std::slice::from_raw_parts_mut(ptr as *mut u8, len) as *mut [u8];
+            //Vec::from_raw_parts(ptr: *mut T, length: usize, capacity: usize)
+            &*r
+        };
+
+        Ok(r)
     }
 
     pub fn get_global_string<T: AsRef<[u8]>>(&self, name: T) -> &Self {
@@ -653,6 +689,18 @@ pub mod tests {
 
         duk.call(0).unwrap();
         assert_eq!(duk.get_int(-1).unwrap(), 42);
+    }
+
+    #[test]
+    fn context_push_bytes() {
+        let duk = Context::new().unwrap();
+
+        let bs = b"Hello, World";
+        duk.push_bytes(bs);
+
+        assert_eq!(duk.is_buffer(-1), true);
+        let bs2 = duk.get_bytes(-1).unwrap();
+        assert_eq!(bs, bs2);
     }
 
 }

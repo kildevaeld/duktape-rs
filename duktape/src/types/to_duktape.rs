@@ -2,6 +2,7 @@ use super::super::{error::Result, Context};
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::c_void;
 use std::mem;
+use std::ptr;
 #[cfg(feature = "value-rs")]
 use value::{chrono::Datelike, chrono::Timelike, Date, DateTime, Number, Value};
 
@@ -131,9 +132,10 @@ impl<T: ToDuktape> ToDuktape for BTreeMap<String, T> {
 
 impl ToDuktape for &[u8] {
     fn to_context(self, ctx: &Context) -> Result<()> {
-        let mut buffer = unsafe { duktape_sys::duk_push_fixed_buffer(ctx.inner, self.len()) };
-        println!("{:?}", ctx);
-        mem::replace(&mut buffer, self.as_ptr() as *mut c_void);
+        let mut buffer =
+            unsafe { duktape_sys::duk_push_fixed_buffer(ctx.inner, self.len()) } as *mut u8;
+
+        unsafe { ptr::copy(self.as_ptr(), buffer, self.len()) };
         Ok(())
     }
 }
