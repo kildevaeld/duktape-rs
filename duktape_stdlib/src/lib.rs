@@ -35,7 +35,7 @@ pub fn init(ctx: &Context, builder: &mut duktape_cjs::RequireBuilder, config: bu
 
     if config.contains(Modules::Utils) {
         builder.module("utils", |ctx: &Context| {
-            let module: Object = ctx.get(-1)?; //require::push_module_object(ctx, "utils", false).unwrap();
+            let module: Object = ctx.get(-1)?;
             require::eval_module(ctx, UTILS, &module).unwrap();
             Ok(1)
         });
