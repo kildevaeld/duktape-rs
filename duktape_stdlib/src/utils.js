@@ -1,9 +1,15 @@
 var _slice = Array.prototype.slice;
 var formatters = {
     s: function s(data) {
+        if (data && typeof data.toString === 'function') {
+            return data.toString();
+        }
         return String(data);
     },
     O: function O(data) {
+        if (data && data instanceof Error) {
+            return data.toString();
+        }
         return JSON.stringify(data);
     }
 };
