@@ -15,6 +15,10 @@ value = { git = "https://github.com/kildevaeld/value-rs", optional = true, featu
 name = "class"
 path = "example/class.rs"
 
+[[example]]
+name = "bytes"
+path = "example/bytes.rs"
+
 
 [features]
 default = []
