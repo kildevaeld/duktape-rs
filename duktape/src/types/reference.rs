@@ -3,6 +3,7 @@ use super::super::error::Result;
 use super::super::privates::{make_ref, push_ref, unref};
 use super::{FromDuktape, ToDuktape};
 use duktape_sys as duk;
+use std::ffi::CStr;
 use std::fmt;
 
 pub struct Ref<'a> {
@@ -71,12 +72,15 @@ impl<'a> FromDuktape<'a> for Ref<'a> {
 
 impl<'a> fmt::Display for Ref<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let s = match self.get_type() {
-            Type::String => self.get::<String>().unwrap(),
-            Type::Number => format!("{}", self.get::<u32>().unwrap()),
-            _ => format!(""),
-        };
-        write!(f, "{}", s)
+        // let s = match self.get_type() {
+        //     Type::String => self.get::<String>().unwrap(),
+        //     Type::Number => format!("{}", self.get::<u32>().unwrap()),
+        //     _ => format!(""),
+        // };
+        self.push();
+        let s = unsafe { CStr::from_ptr(duk::duk_safe_to_string(self.ctx.inner, -1)) };
+        self.ctx.pop(1);
+        write!(f, "{}", s.to_string_lossy())
     }
 }
 
