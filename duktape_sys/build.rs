@@ -20,11 +20,17 @@ fn main() {
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
 
-    cc::Build::new()
+    let mut builder = cc::Build::new();
+
+    builder
         .file("duktape-2.3.0/src/duktape.c")
         .flag_if_supported("-fomit-frame-pointer")
-        .flag_if_supported("-fstrict-aliasing")
-        // .flag_if_supported("-fprofile-generate")
-        .opt_level(2)
-        .compile("libduktape.a");
+        .flag_if_supported("-fstrict-aliasing");
+    // .flag_if_supported("-fprofile-generate")
+    let profile = env::var("PROFILE").unwrap();
+    if profile == "release" {
+        builder.opt_level(2);
+    }
+
+    builder.compile("libduktape.a");
 }
