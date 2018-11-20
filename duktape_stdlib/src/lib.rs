@@ -22,7 +22,7 @@ pub static RUNTIME: &'static [u8] = include_bytes!("runtime.js");
 pub use self::builder::Modules;
 
 #[cfg(feature = "http")]
-fn init_http(ctx: &Context, builder: &mut duktape_cjs::Builder, config: &builder::Modules) {
+fn init_http(builder: &mut duktape_cjs::Builder, config: &builder::Modules) {
     if config.contains(Modules::Http) {
         builder.module("http", http::init_http);
     }
@@ -51,7 +51,7 @@ pub fn register(ctx: &Context, builder: &mut duktape_cjs::Builder, config: build
     }
 
     #[cfg(feature = "http")]
-    init_http(ctx, builder, &config);
+    init_http(builder, &config);
 }
 
 pub fn init_runtime(ctx: &Context) {

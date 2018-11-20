@@ -12,7 +12,7 @@ function request(method) {
             options = optionsOrNull || {};
             options.url = urlOrOptions;
         }
-        options.method = method;
+        options.method = method.toUpperCase();
 
         return this.request(options);
     }

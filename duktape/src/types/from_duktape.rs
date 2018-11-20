@@ -1,6 +1,6 @@
 use super::super::{
     error::{ErrorKind, Result},
-    Context, Enumerate, Idx, Type,
+    Context, Idx,
 };
 #[cfg(feature = "value-rs")]
 use value::{Map, Number, Value};

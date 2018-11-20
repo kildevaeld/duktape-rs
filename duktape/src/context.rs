@@ -4,9 +4,8 @@ use super::error::{ErrorKind, Result};
 use super::privates;
 use super::types::{FromDuktape, ToDuktape};
 use duktape_sys::{self as duk, duk_context};
-use std::ffi::{c_void, CStr};
+use std::ffi::CStr;
 use std::fmt;
-use std::mem;
 use std::ptr;
 use typemap::TypeMap;
 

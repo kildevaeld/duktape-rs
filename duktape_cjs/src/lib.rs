@@ -12,7 +12,7 @@ mod file_resolver;
 mod internal;
 pub mod loaders;
 mod types;
-mod utils;
+pub mod utils;
 
 pub use self::commonjs::{Builder, CommonJS};
 pub use self::eval::*;

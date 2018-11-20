@@ -23,17 +23,17 @@ fn main() -> duktape_cjs::error::Result<()> {
 
     duktape_stdlib::init_runtime(&ctx);
 
-    let args = env::args();
-
-    if args.len() < 2 {
+    let args = env::args().collect::<Vec<_>>();
+    let (path, data) = if args.len() < 2 {
         return repl::run(&ctx);
-    }
+    } else if args.len() == 3 && args[1] == "-e" {
+        ("", args[2].as_bytes().to_vec())
+    } else {
+        let path = &args[1];
+        let data = fs::read(path)?;
+        (path.as_str(), data)
+    };
 
-    let path = &args.collect::<Vec<String>>()[1];
-    let data = fs::read(path).unwrap();
-    ctx.push_global_stash();
-
-    ctx.pop(1);
     duktape_cjs::eval_main_script(&mut ctx, path, data)?;
 
     Ok(())

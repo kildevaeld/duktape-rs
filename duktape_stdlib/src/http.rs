@@ -52,7 +52,7 @@ fn get_method(o: &Object) -> Result<(Method, Url)> {
 
     let url: Url = match o.get::<_, &str>("url")?.parse() {
         Ok(u) => u,
-        Err(e) => return Err(ErrorKind::TypeError(format!("invalid url")).into()),
+        Err(_) => return Err(ErrorKind::TypeError(format!("invalid url")).into()),
     };
 
     match Method::from_str(method) {
@@ -89,7 +89,7 @@ fn push_response(ctx: &Context, mut resp: Response) -> Result<Object> {
 
     let mut body = Vec::new();
     match resp.read_to_end(&mut body) {
-        Ok(b) => (),
+        Ok(_) => (),
         Err(e) => return Err(ErrorKind::Error(format!("could not read body: {}", e)).into()),
     };
 

@@ -33,7 +33,7 @@ pub fn init_writer<'a>() -> duktape::class::Builder<'a> {
                 }
 
                 let r = ctx.get::<Ref>(0)?;
-                write!(writer, "{}", r);
+                write!(writer, "{}", r).unwrap();
 
                 ctx.push_this();
                 Ok(1)
