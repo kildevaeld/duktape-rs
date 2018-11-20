@@ -5,6 +5,7 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
+
 pub trait CJSContext {
     fn eval_main<'a, T: AsRef<Path>>(&'a self, path: T) -> error::Result<Object<'a>>;
     fn eval_main_script<'a, T: AsRef<Path>, S: AsRef<[u8]>>(
@@ -12,6 +13,8 @@ pub trait CJSContext {
         path: T,
         script: S,
     ) -> error::Result<Object<'a>>;
+
+    fn require<'a, Str: AsRef<[u8]>>(&'a self, name: Str) -> error::Result<Object<'a>>;
 }
 
 pub fn eval_main<'a, T: AsRef<Path>>(ctx: &'a duktape::Context, path: T) -> error::Result<Object> {
@@ -36,6 +39,11 @@ pub fn eval_main_script<'a, T: AsRef<Path>, S: AsRef<[u8]>>(
     internal::eval_module(ctx, script.as_ref(), &mut module)?;
 
     Ok(module)
+}
+
+pub fn require<'a, Str: AsRef<[u8]>>(ctx:&'a Context , name: Str) -> error::Result<Object<'a>> {
+    //let o: Object = ctx.get_global_string("require").push_string(name.as_ref().clone()).call(1)?.get(-1)?;
+    Ok(ctx.get_global_string("require").push_string(name).call(1)?.getp()?)
 }
 
 impl CJSContext for Context {
@@ -63,5 +71,9 @@ impl CJSContext for Context {
 
         // Ok(module)
         eval_main_script(self, path, script)
+    }
+
+    fn require<'a, Str: AsRef<[u8]>>(&'a self, name: Str) -> error::Result<Object<'a>> {
+        require(self, name)
     }
 }
