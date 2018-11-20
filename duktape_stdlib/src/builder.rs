@@ -3,12 +3,13 @@ bitflags!{
         const Io = 1 << 0;
         const Fs= 1 << 1;
         const Utils = 1 << 2;
+        #[cfg(feature = "http")]
         const Http = 1 << 3;
     }
 }
 
 impl Default for Modules {
     fn default() -> Modules {
-        Modules::Io | Modules::Fs | Modules::Utils | Modules::Http
+        Modules::Io | Modules::Fs | Modules::Utils
     }
 }

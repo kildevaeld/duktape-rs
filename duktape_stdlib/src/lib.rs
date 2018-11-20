@@ -2,10 +2,12 @@ extern crate duktape;
 extern crate duktape_cjs;
 #[macro_use]
 extern crate bitflags;
+#[cfg(feature = "http")]
 extern crate reqwest;
 
 mod builder;
 mod fs;
+#[cfg(feature = "http")]
 mod http;
 mod io;
 mod process;
@@ -19,7 +21,14 @@ pub static RUNTIME: &'static [u8] = include_bytes!("runtime.js");
 
 pub use self::builder::Modules;
 
-pub fn init(ctx: &Context, builder: &mut duktape_cjs::RequireBuilder, config: builder::Modules) {
+#[cfg(feature = "http")]
+fn init_http(ctx: &Context, builder: &mut duktape_cjs::Builder, config: &builder::Modules) {
+    if config.contains(Modules::Http) {
+        builder.module("http", http::init_http);
+    }
+}
+
+pub fn register(ctx: &Context, builder: &mut duktape_cjs::Builder, config: builder::Modules) {
     ctx.eval(POLFILLS).unwrap();
     ctx.pop(1);
 
@@ -41,9 +50,8 @@ pub fn init(ctx: &Context, builder: &mut duktape_cjs::RequireBuilder, config: bu
         });
     }
 
-    if config.contains(Modules::Http) {
-        builder.module("http", http::init_http);
-    }
+    #[cfg(feature = "http")]
+    init_http(ctx, builder, &config);
 }
 
 pub fn init_runtime(ctx: &Context) {

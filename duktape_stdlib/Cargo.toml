@@ -8,4 +8,8 @@ edition = "2018"
 duktape = { path = "../duktape" }
 duktape_cjs = { path = "../duktape_cjs" }
 bitflags = "1.0.4"
-reqwest = "^0.9"
+reqwest = { version = "^0.9", optional = true }
+
+[features]
+default = []
+http = ["reqwest"]

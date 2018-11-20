@@ -6,6 +6,8 @@
         _has = Object.prototype.hasOwnProperty,
         _noop = function () {};
 
+
+
     function Console() {}
 
     function write(w, l, args) {
