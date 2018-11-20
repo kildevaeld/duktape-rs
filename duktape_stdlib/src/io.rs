@@ -3,18 +3,18 @@ use duktape::{
     self,
     error::{ErrorKind, Result},
 };
-use std::io::{self, Read, Stdin, Write};
+use std::io::{self, Read, Write};
 
-struct WriterKey;
+pub struct WriterKey;
 
 impl duktape::Key for WriterKey {
     type Value = Box<dyn Write>;
 }
 
-struct ReaderKey;
+pub struct ReaderKey;
 
 impl duktape::Key for ReaderKey {
-    type Value = Stdin;
+    type Value = Box<dyn Read>;
 }
 
 pub fn init_writer<'a>() -> duktape::class::Builder<'a> {
@@ -53,20 +53,74 @@ pub fn init_writer<'a>() -> duktape::class::Builder<'a> {
 
 pub fn init_reader<'a>() -> duktape::class::Builder<'a> {
     let mut reader = duktape::class::build();
-    reader.method(
-        "read",
-        (1, |ctx: &Context, this: &mut class::Instance| {
+    reader
+        .method(
+            "read",
+            (1, |ctx: &Context, this: &mut class::Instance| {
+                let reader = match this.data_mut().get_mut::<ReaderKey>() {
+                    Some(r) => r,
+                    None => {
+                        return Err(
+                            ErrorKind::ReferenceError(format!("could not resovle reader")).into(),
+                        )
+                    }
+                };
+
+                let mut buffer = [0; 8192];
+                let size;
+
+                loop {
+                    match reader.read(&mut buffer[..]) {
+                        Err(e) => match e.kind() {
+                            io::ErrorKind::Interrupted => {
+                                continue;
+                            }
+                            _ => {
+                                return Err(ErrorKind::ReferenceError(format!(
+                                    "could not resovle reader"
+                                ))
+                                .into())
+                            }
+                        },
+                        Ok(s) => {
+                            if s == 0 {
+                                ctx.push_undefined();
+                                return Ok(1);
+                            } else {
+                                size = s;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                ctx.push(&buffer[0..size])?;
+
+                Ok(1)
+            }),
+        )
+        .method("readAll", |ctx: &Context, this: &mut class::Instance| {
             let reader = match this.data_mut().get_mut::<ReaderKey>() {
                 Some(r) => r,
-                None => return Ok(0),
+                None => {
+                    return Err(
+                        ErrorKind::ReferenceError(format!("could not resovle reader")).into(),
+                    )
+                }
             };
 
-            let mut buffer = Vec::with_capacity(256);
-            reader.read(&mut buffer).unwrap();
+            let mut buffer = Vec::new();
+            match reader.read_to_end(&mut buffer) {
+                Err(e) => {
+                    return Err(ErrorKind::Error(format!("error while reading: {}", e)).into())
+                }
+                Ok(_) => {}
+            };
+
             ctx.push(buffer.as_slice())?;
+
             Ok(1)
-        }),
-    );
+        });
     reader
 }
 
@@ -98,16 +152,16 @@ pub fn init_io(ctx: &Context) -> Result<i32> {
     let mut stdin = duktape::class::build();
     stdin
         .constructor(|_ctx: &Context, this: &mut class::Instance| {
-            this.data_mut().insert::<ReaderKey>(io::stdin());
+            this.data_mut().insert::<ReaderKey>(Box::new(io::stdin()));
             Ok(0)
         })
-        .method("readLine", |ctx: &Context, this: &mut class::Instance| {
-            let reader = this.data_mut().get_mut::<ReaderKey>().unwrap();
-            let mut st = String::new();
-            reader.read_line(&mut st)?;
-            ctx.push(st)?;
-            Ok(1)
-        })
+        // .method("readLine", |ctx: &Context, this: &mut class::Instance| {
+        //     let reader = this.data_mut().get_mut::<ReaderKey>().unwrap();
+        //     let mut st = String::new();
+        //     reader.read_line(&mut st)?;
+        //     ctx.push(st)?;
+        //     Ok(1)
+        // })
         .inherit(reader_ctor);
 
     module
