@@ -15,9 +15,9 @@ fn main() -> duktape_cjs::error::Result<()> {
 
     let mut ctx = Context::new().unwrap();
 
-    let mut require = duktape_cjs::RequireBuilder::new();
+    let mut require = duktape_cjs::Builder::new();
 
-    duktape_stdlib::init(&ctx, &mut require, duktape_stdlib::Modules::default());
+    duktape_stdlib::register(&ctx, &mut require, duktape_stdlib::Modules::all());
 
     duktape_cjs::register(&ctx, require)?;
 
