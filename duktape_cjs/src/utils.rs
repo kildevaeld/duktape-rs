@@ -18,3 +18,13 @@ pub fn join<T: AsRef<Path>, S: AsRef<str>>(base: T, cmp: S) -> Result<PathBuf> {
 
     Ok(base.join(path))
 }
+
+pub fn join_slice<T: AsRef<Path>, S: AsRef<str>>(base: T, cmps: &[S]) -> Result<PathBuf> {
+    let mut path = base.as_ref().to_path_buf();
+
+    for p in cmps {
+        path = join(&path, p)?;
+    }
+
+    Ok(path)
+}
