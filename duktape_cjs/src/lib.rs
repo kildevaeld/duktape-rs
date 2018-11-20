@@ -14,7 +14,7 @@ pub mod loaders;
 mod types;
 mod utils;
 
-pub use self::commonjs::{CommonJS, RequireBuilder};
+pub use self::commonjs::{Builder, CommonJS};
 pub use self::eval::*;
 pub use self::types::{ModuleLoader, ModuleResolver};
 
@@ -26,10 +26,7 @@ pub mod resolvers {
     pub use super::file_resolver::*;
 }
 
-pub fn register(
-    ctx: &duktape::Context,
-    mut builder: RequireBuilder,
-) -> duktape::error::Result<bool> {
+pub fn register(ctx: &duktape::Context, mut builder: Builder) -> duktape::error::Result<bool> {
     ctx.push_global_stash();
     if ctx.has_prop_string(-1, types::KEY) {
         return Ok(false);
@@ -42,10 +39,12 @@ pub fn register(
 
     ctx.pop(1);
 
-    builder.resolver(
-        "file",
-        Box::new(file_resolver::FileResolver {}) as Box<dyn ModuleResolver>,
-    );
+    if builder.file_loader {
+        builder.resolver(
+            "file",
+            Box::new(file_resolver::FileResolver {}) as Box<dyn ModuleResolver>,
+        );
+    }
 
     builder
         .loader("js", loaders::javascript())
