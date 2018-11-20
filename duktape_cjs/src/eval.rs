@@ -40,12 +40,13 @@ pub fn eval_main_script<'a, T: AsRef<Path>, S: AsRef<[u8]>>(
 
 impl CJSContext for Context {
     fn eval_main<'a, T: AsRef<Path>>(&'a self, path: T) -> error::Result<Object<'a>> {
-        let mut real_p = path.as_ref().to_path_buf();
-        if !real_p.is_absolute() {
-            real_p = env::current_dir()?.join(path);
-        }
-        let content = fs::read(&real_p)?;
-        self.eval_main_script(real_p, content)
+        // let mut real_p = path.as_ref().to_path_buf();
+        // if !real_p.is_absolute() {
+        //     real_p = env::current_dir()?.join(path);
+        // }
+        // let content = fs::read(&real_p)?;
+        // self.eval_main_script(real_p, content)
+        eval_main(self, path)
     }
 
     fn eval_main_script<'a, T: AsRef<Path>, S: AsRef<[u8]>>(
@@ -53,13 +54,14 @@ impl CJSContext for Context {
         path: T,
         script: S,
     ) -> error::Result<Object<'a>> {
-        let mut real_p = path.as_ref().to_path_buf();
-        if !real_p.is_absolute() {
-            real_p = env::current_dir()?.join(path);
-        }
-        let mut module = internal::push_module_object(self, real_p, true)?;
-        internal::eval_module(self, script.as_ref(), &mut module)?;
+        // let mut real_p = path.as_ref().to_path_buf();
+        // if !real_p.is_absolute() {
+        //     real_p = env::current_dir()?.join(path);
+        // }
+        // let mut module = internal::push_module_object(self, real_p, true)?;
+        // internal::eval_module(self, script.as_ref(), &mut module)?;
 
-        Ok(module)
+        // Ok(module)
+        eval_main_script(self, path, script)
     }
 }
