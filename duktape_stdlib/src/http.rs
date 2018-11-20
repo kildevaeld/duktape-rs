@@ -1,12 +1,12 @@
+use super::io::ReaderKey;
 use duktape::prelude::*;
 use duktape::{
     class,
     error::{ErrorKind, Result, ResultExt},
     Key,
 };
-use duktape_cjs::require;
+use duktape_cjs::{require, CJSContext};
 use reqwest::{header::HeaderMap, header::HeaderName, Client, Method, Response, Url};
-use std::io::Read;
 use std::str::FromStr;
 
 pub static HTTP: &'static [u8] = include_bytes!("http.js");
@@ -61,7 +61,7 @@ fn get_method(o: &Object) -> Result<(Method, Url)> {
     }
 }
 
-fn push_response(ctx: &Context, mut resp: Response) -> Result<Object> {
+fn push_response(ctx: &Context, resp: Response) -> Result<Object> {
     let o: Object = ctx.create()?;
 
     let headers: Object = ctx.create()?;
@@ -87,13 +87,25 @@ fn push_response(ctx: &Context, mut resp: Response) -> Result<Object> {
         o.set("remoteAddress", ());
     }
 
-    let mut body = Vec::new();
-    match resp.read_to_end(&mut body) {
-        Ok(_) => (),
-        Err(e) => return Err(ErrorKind::Error(format!("could not read body: {}", e)).into()),
-    };
+    ctx.require("http")
+        .unwrap()
+        .get::<_, Ref>("ResponseReader")?
+        .push();
+    ctx.construct(0)?;
+    duktape::class::get_instance(ctx, -1, move |this| {
+        this.data_mut().insert::<ReaderKey>(Box::new(resp));
+        Ok(())
+    })?;
 
-    o.set("body", body.as_slice());
+    o.set("body", ctx.getp::<Ref>()?);
+
+    // let mut body = Vec::new();
+    // match resp.read_to_end(&mut body) {
+    //     Ok(_) => (),
+    //     Err(e) => return Err(ErrorKind::Error(format!("could not read body: {}", e)).into()),
+    // };
+
+    // o.set("body", body.as_slice());
 
     Ok(o)
 }
@@ -165,10 +177,28 @@ fn build_client_class<'a>() -> class::Builder<'a> {
     b
 }
 
+fn build_body_class(ctx: &Context) -> Result<class::Builder> {
+    let mut b = class::build();
+
+    let ctor = ctx
+        .get_global_string("require")
+        .push_string("io")
+        .call(1)?
+        .get_prop_string(-1, "Reader")
+        .getp::<Function>()?;
+
+    ctx.pop(1);
+
+    b.inherit(ctor);
+
+    Ok(b)
+}
+
 pub fn init_http(ctx: &Context) -> Result<i32> {
     let exports: Object = ctx.create()?;
 
     exports.set("Client", build_client_class());
+    exports.set("ResponseReader", build_body_class(ctx)?);
 
     let module: Object = ctx.get(-1)?;
     module.set("exports", exports);
