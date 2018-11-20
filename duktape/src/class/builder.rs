@@ -1,5 +1,5 @@
 use super::super::types::{Function, ToDuktape};
-use super::super::{error::Result, Context};
+use super::super::{error::{Result, ErrorKind}, Context, Idx};
 use super::method::{push_method, Instance, Method, CTOR_KEY, DATA_KEY};
 use duktape_sys as duk;
 use std::collections::HashMap;
@@ -156,4 +156,30 @@ unsafe extern "C" fn class_dtor(ctx: *mut duk::duk_context) -> duk::duk_ret_t {
         duk::duk_pop(ctx);
     }
     0
+}
+
+pub fn get_instance<Func: FnOnce(&mut Instance) -> Result<()>>(
+    ctx: &Context,
+    idx: Idx,
+    cb: Func,
+) -> Result<()> {
+    if ctx.has_prop_string(idx, DATA_KEY) {
+        let mut instance = unsafe {
+            duk::duk_get_prop_lstring(
+                ctx.inner,
+                -1,
+                DATA_KEY.as_ptr() as *const i8,
+                DATA_KEY.len(),
+            );
+            let ptr = duk::duk_get_pointer(ctx.inner, -1) as *mut Instance;
+            let pp = Box::from_raw(ptr);
+            duk::duk_pop(ctx.inner);
+            pp
+        };
+
+        let ret = cb(&mut instance);
+        Box::into_raw(instance);
+        return ret
+    }
+    bail!(ErrorKind::ReferenceError(format!("not a instance")))
 }
