@@ -21,6 +21,20 @@ impl CommonJS {
             .map(|m| m.extension.clone())
             .collect::<Vec<_>>()
     }
+
+    pub fn protocols(&self) -> Vec<String> {
+        self.resolvers
+            .iter()
+            .map(|m| m.protocol.clone())
+            .collect::<Vec<_>>()
+    }
+
+    pub fn modules(&self) -> Vec<String> {
+        self.modules
+            .iter()
+            .map(|m| m.name.clone())
+            .collect::<Vec<_>>()
+    }
 }
 
 impl Drop for CommonJS {
@@ -52,21 +66,25 @@ struct Module {
     module: Box<dyn Callable>,
 }
 
-pub struct RequireBuilder {
+pub struct Builder {
     loaders: Vec<Loader>,
     resolvers: Vec<Resolver>,
     modules: Vec<Module>,
+    pub(crate) file_loader: bool,
 }
 
-impl RequireBuilder {
-    pub fn new() -> RequireBuilder {
-        RequireBuilder {
+impl Builder {
+    /// Creates a new builder
+    pub fn new() -> Builder {
+        Builder {
             loaders: Vec::new(),
             resolvers: Vec::new(),
             modules: Vec::new(),
+            file_loader: true,
         }
     }
 
+    // Add a loader to the builder
     pub fn loader(&mut self, extension: &str, loader: Box<dyn ModuleLoader>) -> &mut Self {
         self.loaders.push(Loader {
             extension: extension.to_owned(),
@@ -75,6 +93,7 @@ impl RequireBuilder {
         self
     }
 
+    // Add a resovler to the builder
     pub fn resolver<T: AsRef<str>>(
         &mut self,
         protocol: T,
@@ -87,6 +106,7 @@ impl RequireBuilder {
         self
     }
 
+    // Add a builtin module
     pub fn module<T: 'static>(&mut self, id: &str, module: T) -> &mut Self
     where
         T: Callable,
@@ -110,6 +130,12 @@ impl RequireBuilder {
         self
     }
 
+    pub fn file_loader(&mut self, enable: bool) -> &mut Self {
+        self.file_loader = enable;
+        self
+    }
+
+    // Build
     pub fn build(self) -> CommonJS {
         CommonJS {
             loaders: self.loaders,
@@ -122,15 +148,7 @@ impl RequireBuilder {
 pub struct Require;
 
 impl Require {
-    // fn push_module(&self, ctx: &Context, id: &str) -> Result<()> {
-    //     ctx.push_object()
-    //         .push(id)?
-    //         .put_prop_string(-2, "id")
-    //         .push_object()
-    //         .put_prop_string(-2, "exports");
-    //     Ok(())
-    // }
-
+    /// Load a module
     fn load_module<'a>(&self, id: &str, ctx: &'a Context, repo: &CommonJS) -> Result<Object<'a>> {
         let caps = PROTOCOL_RE.captures(id).unwrap();
 
@@ -195,6 +213,7 @@ impl Require {
         }
     }
 
+    /// Load a builtin module
     fn load_builtin_module<'a>(
         &self,
         id: &str,
@@ -257,10 +276,6 @@ impl Require {
 
         Ok(())
     }
-
-    // fn del_cache(&self, ctx: &Context, id: &str) -> Result<()> {
-    //     Ok(())
-    // }
 }
 
 impl Callable for Require {
@@ -307,8 +322,7 @@ impl Drop for Require {
     fn drop(&mut self) {}
 }
 
-pub fn build_require<'a>(ctx: &'a Context, module_id: &str) -> Result<Function<'a>> {
-    //let require: Box<dyn Callable> = Box::new(Require {});
+pub(crate) fn build_require<'a>(ctx: &'a Context, module_id: &str) -> Result<Function<'a>> {
     let function: Object = ctx.push_function(Require {}).getp()?;
 
     let mut stash: Object = ctx.push_global_stash().getp()?;
