@@ -1,6 +1,7 @@
-use super::super::context::{Context, Idx, Type};
+use super::super::context::{Context, Idx};
 use super::super::error::Result;
 use super::super::privates::{make_ref, push_ref, unref};
+use super::Type;
 use super::{FromDuktape, ToDuktape};
 use duktape_sys as duk;
 use std::ffi::CStr;

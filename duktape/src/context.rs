@@ -2,7 +2,7 @@ use super::callable::{push_callable, Callable};
 use super::class::{push_class_builder, Builder};
 use super::error::{ErrorKind, Result};
 use super::privates;
-use super::types::{FromDuktape, ToDuktape};
+use super::types::{FromDuktape, ToDuktape, Type};
 use duktape_sys::{self as duk, duk_context};
 use std::ffi::CStr;
 use std::fmt;
@@ -10,19 +10,6 @@ use std::ptr;
 use typemap::TypeMap;
 
 pub type Idx = i32;
-
-#[derive(PartialEq, Debug)]
-pub enum Type {
-    Undefined,
-    Null,
-    String,
-    Boolean,
-    Number,
-    Object,
-    Array,
-    Function,
-    Buffer,
-}
 
 pub trait Constructable<'ctor>: Sized {
     fn construct(duk: &'ctor Context) -> Result<Self>;

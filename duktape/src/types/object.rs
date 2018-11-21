@@ -1,6 +1,7 @@
-use super::super::context::{Constructable, Context, Idx, Type};
+use super::super::context::{Constructable, Context, Idx};
 use super::super::error::{ErrorKind, Result};
 use super::reference::Ref;
+use super::Type;
 use super::{ArgumentList, Array, FromDuktape, Function, ToDuktape};
 use std::convert::From;
 use std::fmt;
