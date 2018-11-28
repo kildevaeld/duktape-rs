@@ -266,7 +266,8 @@ impl<'a> iter::Iterator for ObjectIterator<'a> {
 #[cfg(test)]
 pub mod tests {
 
-    use super::super::super::context::{Context, Type};
+    use super::super::super::context::Context;
+    use super::super::Type;
     use super::Object;
 
     #[test]
