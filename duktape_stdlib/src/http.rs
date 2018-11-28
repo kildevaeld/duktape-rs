@@ -110,21 +110,21 @@ fn push_response(ctx: &Context, resp: Response) -> Result<Object> {
     Ok(o)
 }
 
-fn request(method: Method, ctx: &Context, _: &mut class::Instance) -> Result<i32> {
-    let o = if ctx.is(Type::String, 0) {
-        let o = ctx.create::<Object>()?;
-        o.set("url", ctx.get::<&str>(0)?);
-        o
-    } else {
-        ctx.get::<Object>(0)?
-    };
+// fn request(method: Method, ctx: &Context, _: &mut class::Instance) -> Result<i32> {
+//     let o = if ctx.is(Type::String, 0) {
+//         let o = ctx.create::<Object>()?;
+//         o.set("url", ctx.get::<&str>(0)?);
+//         o
+//     } else {
+//         ctx.get::<Object>(0)?
+//     };
 
-    o.set("method", method.to_string());
+//     o.set("method", method.to_string());
 
-    let this = ctx.push_this().getp::<Object>()?;
-    this.call::<_, _, Ref>("request", o)?.push();
-    Ok(1)
-}
+//     let this = ctx.push_this().getp::<Object>()?;
+//     this.call::<_, _, Ref>("request", o)?.push();
+//     Ok(1)
+// }
 
 fn build_client_class<'a>() -> class::Builder<'a> {
     let mut b = class::build();
