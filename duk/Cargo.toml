@@ -8,6 +8,6 @@ edition = "2018"
 duktape = { path = "../duktape" }
 duktape_cjs = { path = "../duktape_cjs" }
 duktape_stdlib = { path = "../duktape_stdlib", features = ["http"] }
-log = "0.4"
-env_logger = "0.5.13"
-rustyline = "2.1.0"
+log = "^0.4"
+env_logger = "^0.5.13"
+rustyline = "^2.1.0"
