@@ -1,7 +1,11 @@
+#[cfg(feature = "value-rs")]
+use super::super::Enumerate;
 use super::super::{
     error::{ErrorKind, Result},
     Context, Idx,
 };
+#[cfg(feature = "value-rs")]
+use super::Type;
 #[cfg(feature = "value-rs")]
 use value::{Map, Number, Value};
 
