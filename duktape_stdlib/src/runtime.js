@@ -3,8 +3,7 @@
     const io = require('io'),
         utils = require('utils'),
         _slice = Array.prototype.slice,
-        _has = Object.prototype.hasOwnProperty,
-        _noop = function () {};
+        _has = Object.prototype.hasOwnProperty;
 
 
 
@@ -32,14 +31,13 @@
 
     root.Console = Console;
 
-    root.console = new Console()
+    root.console = new Console();
     root.console = new Proxy(root.console, {
         get: function (t, p) {
             if (typeof t[p] === 'function') {
                 return t[p];
             }
-            return noop;
+            return utils.noop;
         }
-    })
-
+    });
 })

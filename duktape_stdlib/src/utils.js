@@ -9,6 +9,8 @@ var formatters = {
     O: function O(data) {
         if (data && data instanceof Error) {
             return data.toString();
+        } else if (typeof data === 'function') {
+            return data.toString();
         }
         return JSON.stringify(data);
     }
@@ -39,3 +41,5 @@ exports.format = function format() {
     });
     return args.join(' ');
 }
+
+exports.noop = function () {}

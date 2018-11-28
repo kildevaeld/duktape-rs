@@ -142,37 +142,37 @@ fn build_client_class<'a>() -> class::Builder<'a> {
             ctx.push(push_response(ctx, resp)?)?;
             Ok(1)
         }),
-    )
-    .method(
-        "get",
-        (1, |ctx: &Context, this: &mut class::Instance| {
-            request(Method::GET, ctx, this)
-        }),
-    )
-    .method(
-        "post",
-        (1, |ctx: &Context, this: &mut class::Instance| {
-            request(Method::POST, ctx, this)
-        }),
-    )
-    .method(
-        "put",
-        (1, |ctx: &Context, this: &mut class::Instance| {
-            request(Method::PUT, ctx, this)
-        }),
-    )
-    .method(
-        "patch",
-        (1, |ctx: &Context, this: &mut class::Instance| {
-            request(Method::PATCH, ctx, this)
-        }),
-    )
-    .method(
-        "del",
-        (1, |ctx: &Context, this: &mut class::Instance| {
-            request(Method::DELETE, ctx, this)
-        }),
     );
+    // .method(
+    //     "get",
+    //     (1, |ctx: &Context, this: &mut class::Instance| {
+    //         request(Method::GET, ctx, this)
+    //     }),
+    // )
+    // .method(
+    //     "post",
+    //     (1, |ctx: &Context, this: &mut class::Instance| {
+    //         request(Method::POST, ctx, this)
+    //     }),
+    // )
+    // .method(
+    //     "put",
+    //     (1, |ctx: &Context, this: &mut class::Instance| {
+    //         request(Method::PUT, ctx, this)
+    //     }),
+    // )
+    // .method(
+    //     "patch",
+    //     (1, |ctx: &Context, this: &mut class::Instance| {
+    //         request(Method::PATCH, ctx, this)
+    //     }),
+    // )
+    // .method(
+    //     "del",
+    //     (1, |ctx: &Context, this: &mut class::Instance| {
+    //         request(Method::DELETE, ctx, this)
+    //     }),
+    // );
 
     b
 }

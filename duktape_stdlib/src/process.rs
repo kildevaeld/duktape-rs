@@ -13,6 +13,18 @@ pub fn init_process(ctx: &Context) -> Result<()> {
         Ok(1)
     });
 
+    let platform = if cfg!(target_os = "macos") {
+        "macos"
+    } else if cfg!(target_os = "linux") {
+        "linux"
+    } else if cfg!(target_os = "windows") {
+        "windows"
+    } else {
+        "unknown"
+    };
+
+    process.set("platform", platform);
+
     global.set("process", process);
 
     Ok(())

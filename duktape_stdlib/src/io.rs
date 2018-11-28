@@ -3,7 +3,10 @@ use duktape::{
     self,
     error::{ErrorKind, Result},
 };
+use duktape_cjs::require;
 use std::io::{self, Read, Write};
+
+pub static IO_JS: &'static [u8] = include_bytes!("io.js");
 
 pub struct WriterKey;
 
@@ -125,13 +128,13 @@ pub fn init_reader<'a>() -> duktape::class::Builder<'a> {
 }
 
 pub fn init_io(ctx: &Context) -> Result<i32> {
-    let module = ctx.create::<Object>()?;
+    let exports = ctx.create::<Object>()?;
 
-    module.set("Writer", init_writer());
-    module.set("Reader", init_reader());
+    exports.set("Writer", init_writer());
+    exports.set("Reader", init_reader());
 
-    let writer_ctor: Function = module.get("Writer")?;
-    let reader_ctor: Function = module.get("Reader")?;
+    let writer_ctor: Function = exports.get("Writer")?;
+    let reader_ctor: Function = exports.get("Reader")?;
 
     let mut stdout = duktape::class::build();
     stdout
@@ -164,16 +167,23 @@ pub fn init_io(ctx: &Context) -> Result<i32> {
         // })
         .inherit(reader_ctor);
 
-    module
+    exports
         .set("Stderr", stderr)
         .set("Stdout", stdout)
         .set("Stdin", stdin);
 
-    module.set("stdout", module.construct("Stdout", ())?);
-    module.set("stderr", module.construct("Stderr", ())?);
-    module.set("stdin", module.construct("Stdin", ())?);
+    exports.set("stdout", exports.construct("Stdout", ())?);
+    exports.set("stderr", exports.construct("Stderr", ())?);
+    exports.set("stdin", exports.construct("Stdin", ())?);
 
-    ctx.push(module)?;
+    let module: Object = ctx.get(-1)?;
+    module.set("exports", exports);
+
+    require::eval_module(ctx, IO_JS, &module).unwrap();
+
+    module.get::<_, Ref>("exports")?.push();
+
+    //ctx.push(module)?;
 
     Ok(1)
 }
