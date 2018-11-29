@@ -4,7 +4,7 @@ extern crate error_chain;
 extern crate typemap;
 #[macro_use]
 extern crate bitflags;
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 extern crate value;
 mod callable;
 pub mod class;

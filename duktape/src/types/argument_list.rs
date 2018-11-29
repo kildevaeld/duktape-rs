@@ -1,7 +1,7 @@
 use super::super::context::Context;
 use super::super::error::Result;
 use super::ToDuktape;
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 use value::Value;
 
 macro_rules! push_or_pop {
@@ -32,7 +32,7 @@ impl<'a> ArgumentList for &'a str {
     }
 }
 
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 impl ArgumentList for Value {
     fn len(&self) -> i32 {
         1

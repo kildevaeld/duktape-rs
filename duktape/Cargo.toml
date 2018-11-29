@@ -22,4 +22,3 @@ path = "example/bytes.rs"
 
 [features]
 default = []
-value-rs = ["value"]

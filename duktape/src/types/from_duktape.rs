@@ -1,12 +1,12 @@
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 use super::super::Enumerate;
 use super::super::{
     error::{ErrorKind, Result},
     Context, Idx,
 };
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 use super::Type;
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 use value::{Map, Number, Value};
 
 pub trait FromDuktape<'de>: Sized {
@@ -85,14 +85,14 @@ impl<'de> FromDuktape<'de> for &'de [u8] {
     }
 }
 
-// #[cfg(feature = "value-rs")]
+// #[cfg(feature = "value")]
 // impl<'de> FromDuktape<'de> for Number {
 //     fn from_context(ctx: &'de Context, index: Idx) -> Result<Self> {
 
 //     }
 // }
 
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 impl<'de> FromDuktape<'de> for Value {
     fn from_context(ctx: &'de Context, idx: Idx) -> Result<Self> {
         let ty = ctx.get_type(idx);
@@ -114,7 +114,7 @@ impl<'de> FromDuktape<'de> for Value {
     }
 }
 
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 #[inline]
 fn pull_object(ctx: &Context, idx: Idx) -> Result<Value> {
     ctx.enumerator(idx, Enumerate::OWN_PROPERTIES_ONLY)?;
@@ -130,7 +130,7 @@ fn pull_object(ctx: &Context, idx: Idx) -> Result<Value> {
     Ok(Value::Object(map))
 }
 
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 #[inline]
 fn pull_array(ctx: &Context, idx: Idx) -> Result<Value> {
     ctx.enumerator(idx, Enumerate::ARRAY_INDICES_ONLY)?;

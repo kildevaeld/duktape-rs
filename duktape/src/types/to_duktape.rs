@@ -1,7 +1,7 @@
 use super::super::{error::Result, Context};
 use std::collections::{BTreeMap, HashMap};
 use std::ptr;
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 use value::{chrono::Datelike, chrono::Timelike, Date, DateTime, Number, Value};
 
 pub trait ToDuktape {
@@ -138,7 +138,7 @@ impl ToDuktape for &[u8] {
     }
 }
 
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 impl ToDuktape for DateTime {
     fn to_context(self, ctx: &Context) -> Result<()> {
         ctx.get_global_string("Date")
@@ -156,7 +156,7 @@ impl ToDuktape for DateTime {
     }
 }
 
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 impl ToDuktape for Date {
     fn to_context(self, ctx: &Context) -> Result<()> {
         ctx.get_global_string("Date")
@@ -171,7 +171,7 @@ impl ToDuktape for Date {
     }
 }
 
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 impl ToDuktape for Number {
     fn to_context(self, ctx: &Context) -> Result<()> {
         if self.is_f64() {
@@ -185,7 +185,7 @@ impl ToDuktape for Number {
     }
 }
 
-#[cfg(feature = "value-rs")]
+#[cfg(feature = "value")]
 impl ToDuktape for Value {
     fn to_context(self, ctx: &Context) -> Result<()> {
         match self {
