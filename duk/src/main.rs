@@ -1,4 +1,5 @@
 extern crate duktape;
+extern crate duktape_buble;
 extern crate duktape_cjs;
 extern crate duktape_stdlib;
 extern crate env_logger;
@@ -18,7 +19,7 @@ fn main() -> duktape_cjs::error::Result<()> {
     let mut require = duktape_cjs::Builder::new();
 
     duktape_stdlib::register(&ctx, &mut require, duktape_stdlib::Modules::all());
-
+    duktape_buble::register(&ctx, &mut require);
     duktape_cjs::register(&ctx, require)?;
 
     duktape_stdlib::init_runtime(&ctx);

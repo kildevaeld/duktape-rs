@@ -269,6 +269,7 @@ name = "duk"
 version = "0.1.0"
 dependencies = [
  "duktape 0.2.1",
+ "duktape_buble 0.1.0",
  "duktape_cjs 0.1.0",
  "duktape_stdlib 0.1.0",
  "env_logger 0.5.13 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -285,6 +286,14 @@ dependencies = [
  "error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "typemap 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "value 0.1.0 (git+https://github.com/kildevaeld/value-rs)",
+]
+
+[[package]]
+name = "duktape_buble"
+version = "0.1.0"
+dependencies = [
+ "duktape 0.2.1",
+ "duktape_cjs 0.1.0",
 ]
 
 [[package]]
