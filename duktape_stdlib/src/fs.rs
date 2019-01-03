@@ -3,8 +3,11 @@ use duktape::{
     self,
     error::{ErrorKind, Result},
 };
+use duktape_cjs::require;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
+
+static FS: &'static [u8] = include_bytes!("fs.js");
 
 struct FileKey;
 
@@ -106,14 +109,21 @@ pub fn init_file<'a>() -> class::Builder<'a> {
 }
 
 pub fn init_fs(ctx: &Context) -> Result<i32> {
-    let module = ctx.create::<Object>()?;
+    let exports = ctx.create::<Object>()?;
 
-    module.set("File", init_file());
+    exports.set("File", init_file());
 
     // module
     //     .set("mkdir", duktape::cb(1, Box::new(|_ctx| Ok(0))))
     //     .set("mkdirAll", duktape::cb(1, Box::new(|_ctx| Ok(0))));
 
-    ctx.push(module)?;
+    let module: Object = ctx.get(-1)?;
+    module.set("exports", exports);
+
+    require::eval_module(ctx, FS, &module).unwrap();
+
+    module.get::<_, Ref>("exports")?.push();
+
+    //ctx.push(exports)?;
     Ok(1)
 }
