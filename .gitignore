@@ -2,3 +2,4 @@ bindings.rs
 target/
 .DS_Store
 duk_history.txt
+node_modules/
