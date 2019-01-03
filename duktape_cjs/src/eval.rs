@@ -1,3 +1,4 @@
+use super::commonjs::CommonJS;
 use super::error;
 use super::internal;
 use duktape::prelude::*;
@@ -34,8 +35,27 @@ pub fn eval_main_script<'a, T: AsRef<Path>, S: AsRef<[u8]>>(
     if !real_p.is_absolute() {
         real_p = env::current_dir()?.join(path);
     }
-    let mut module = internal::push_module_object(ctx, real_p, true)?;
-    internal::eval_module(ctx, script.as_ref(), &mut module)?;
+
+    let module = internal::push_module_object(ctx, &real_p, true)?;
+
+    let common = ctx.data()?.get::<CommonJS>().unwrap();
+
+    let ext = real_p.extension().unwrap();
+
+    let loader = match common.loaders.iter().find(|m| m.extension.as_str() == ext) {
+        Some(loader) => loader,
+
+        None => bail!(error::ErrorKind::Resolve(format!(
+            "no loader for: {:?}",
+            ext
+        ))),
+    };
+
+    // if loader.is_none() {
+    //     internal::eval_module(ctx, script.as_ref(), &mut module)?;
+    // }
+
+    loader.loader.load(&ctx, &module, script.as_ref())?;
 
     Ok(module)
 }
