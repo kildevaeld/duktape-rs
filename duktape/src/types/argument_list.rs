@@ -32,6 +32,17 @@ impl<'a> ArgumentList for &'a str {
     }
 }
 
+impl<'a> ArgumentList for &'a [u8] {
+    fn len(&self) -> i32 {
+        1
+    }
+
+    fn push_args(self, ctx: &Context) -> Result<()> {
+        ctx.push_bytes(self);
+        Ok(())
+    }
+}
+
 #[cfg(feature = "value")]
 impl ArgumentList for Value {
     fn len(&self) -> i32 {
