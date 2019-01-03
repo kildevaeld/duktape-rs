@@ -9,7 +9,7 @@ use regex::Regex;
 use std::path::Path;
 
 pub struct CommonJS {
-    loaders: Vec<Loader>,
+    pub(crate) loaders: Vec<Loader>,
     resolvers: Vec<Resolver>,
     modules: Vec<Module>,
 }
@@ -51,9 +51,9 @@ lazy_static! {
     static ref FILE_RE: Regex = Regex::new(r"^(?:/|\.\.?/)(?:[^/\\0]+(?:/)?)+$").unwrap();
 }
 
-struct Loader {
-    extension: String,
-    loader: Box<dyn ModuleLoader>,
+pub(crate) struct Loader {
+    pub(crate) extension: String,
+    pub(crate) loader: Box<dyn ModuleLoader>,
 }
 
 struct Resolver {
