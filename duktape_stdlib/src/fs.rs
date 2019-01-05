@@ -3,7 +3,7 @@ use duktape::{
     self,
     error::{ErrorKind, Result},
 };
-use duktape_cjs::require;
+use duktape_modules::require;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 

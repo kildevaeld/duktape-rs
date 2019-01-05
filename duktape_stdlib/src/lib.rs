@@ -1,5 +1,5 @@
 extern crate duktape;
-extern crate duktape_cjs;
+extern crate duktape_modules;
 #[macro_use]
 extern crate bitflags;
 #[cfg(feature = "http")]
@@ -13,7 +13,7 @@ mod io;
 mod process;
 
 use duktape::prelude::*;
-use duktape_cjs::require;
+use duktape_modules::require;
 
 pub static UTILS: &'static [u8] = include_bytes!("../runtime/dist/utils.js");
 pub static POLFILLS: &'static [u8] = include_bytes!("polyfill.js");
@@ -22,13 +22,13 @@ pub static RUNTIME: &'static [u8] = include_bytes!("runtime.js");
 pub use self::builder::Modules;
 
 #[cfg(feature = "http")]
-fn init_http(builder: &mut duktape_cjs::Builder, config: &builder::Modules) {
+fn init_http(builder: &mut duktape_modules::Builder, config: &builder::Modules) {
     if config.contains(Modules::Http) {
         builder.module("http", http::init_http);
     }
 }
 
-pub fn register(ctx: &Context, builder: &mut duktape_cjs::Builder, config: builder::Modules) {
+pub fn register(ctx: &Context, builder: &mut duktape_modules::Builder, config: builder::Modules) {
     ctx.eval(POLFILLS).unwrap();
     ctx.pop(1);
 

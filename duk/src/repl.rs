@@ -1,7 +1,7 @@
 use colored::*;
 use duktape::prelude::*;
-use duktape_cjs::error::Result;
-use duktape_cjs::CJSContext;
+use ECMAScript Modules ::error::Result;
+use ECMAScript Modules ::CJSContext;
 use rustyline::error::ReadlineError;
 use rustyline::{ColorMode, CompletionType, Config, EditMode, Editor};
 use std::env;

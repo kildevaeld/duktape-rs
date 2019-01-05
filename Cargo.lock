@@ -288,8 +288,8 @@ dependencies = [
  "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "colored 1.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "duktape 0.2.1",
- "duktape_cjs 0.1.0",
  "duktape_es2015 0.1.0",
+ "duktape_modules 0.1.0",
  "duktape_stdlib 0.1.0",
  "env_logger 0.5.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -308,7 +308,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "duktape_cjs"
+name = "duktape_es2015"
+version = "0.1.0"
+dependencies = [
+ "duktape 0.2.1",
+ "duktape_modules 0.1.0",
+]
+
+[[package]]
+name = "duktape_modules"
 version = "0.1.0"
 dependencies = [
  "duktape 0.2.1",
@@ -318,20 +326,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "duktape_es2015"
-version = "0.1.0"
-dependencies = [
- "duktape 0.2.1",
- "duktape_cjs 0.1.0",
-]
-
-[[package]]
 name = "duktape_stdlib"
 version = "0.1.0"
 dependencies = [
  "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "duktape 0.2.1",
- "duktape_cjs 0.1.0",
+ "duktape_modules 0.1.0",
  "reqwest 0.9.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

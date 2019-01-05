@@ -1,7 +1,7 @@
 extern crate colored;
 extern crate duktape;
-extern crate duktape_cjs;
 extern crate duktape_es2015;
+extern crate duktape_modules;
 extern crate duktape_stdlib;
 extern crate env_logger;
 extern crate log;
@@ -11,9 +11,9 @@ extern crate clap;
 mod repl;
 
 use duktape::prelude::*;
-use duktape_cjs::CJSContext;
+use duktape_modules::CJSContext;
 
-fn main() -> duktape_cjs::error::Result<()> {
+fn main() -> duktape_modules::error::Result<()> {
     env_logger::init();
 
     let matches = clap_app!(duk =>
@@ -27,7 +27,7 @@ fn main() -> duktape_cjs::error::Result<()> {
 
     let ctx = Context::new().unwrap();
 
-    let mut require = duktape_cjs::Builder::new();
+    let mut require = duktape_modules::Builder::new();
 
     duktape_stdlib::register(&ctx, &mut require, duktape_stdlib::Modules::all());
 
@@ -35,7 +35,7 @@ fn main() -> duktape_cjs::error::Result<()> {
         duktape_es2015::register(&ctx, &mut require);
     }
 
-    duktape_cjs::register(&ctx, require)?;
+    duktape_modules::register(&ctx, require)?;
     duktape_stdlib::init_runtime(&ctx);
 
     if let Some(script) = matches.value_of("input") {

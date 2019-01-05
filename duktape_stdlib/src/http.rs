@@ -5,7 +5,7 @@ use duktape::{
     error::{ErrorKind, Result, ResultExt},
     Key,
 };
-use duktape_cjs::{require, CJSContext};
+use duktape_modules::{require, CJSContext};
 use reqwest::{header::HeaderMap, header::HeaderName, Client, Method, Response, Url};
 use std::str::FromStr;
 

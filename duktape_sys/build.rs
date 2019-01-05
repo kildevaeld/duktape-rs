@@ -49,19 +49,6 @@ fn main() {
 
 
 
-// #[cfg(not(feature = "buildtime_bindgen"))]
-// mod bindings {
-
-//     use std::path::{Path};
-//     use std::fs;
-
-//     pub fn write_to_out_dir(_header: &str, out_path: &Path) {
-//         let in_path = "binding/duktape_binding.rs";
-//         fs::copy(in_path, out_path).expect("Could not copy bindings to output directory");
-//     }
-// }
-
-
 #[cfg(feature = "buildtime_bindgen")]
 mod bindings {
 
@@ -90,18 +77,5 @@ mod bindings {
     fs::create_dir("bindings").unwrap_or(());
     fs::copy(out_path, "bindings/duktape_binding.rs").expect("could not copy bindings");
 
-    // let mut builder = cc::Build::new();
-
-    // builder
-    //     .file("duktape-2.3.0/src/duktape.c")
-    //     .flag_if_supported("-fomit-frame-pointer")
-    //     .flag_if_supported("-fstrict-aliasing");
-    // // .flag_if_supported("-fprofile-generate")
-    // let profile = env::var("PROFILE").unwrap();
-    // if profile == "release" {
-    //     builder.opt_level(2);
-    // }
-
-    // builder.compile("libduktape.a");
     }
 }

@@ -3,7 +3,7 @@ use duktape::{
     self,
     error::{ErrorKind, Result},
 };
-use duktape_cjs::require;
+use duktape_modules::require;
 use std::io::{self, Read, Write};
 
 pub static IO_JS: &'static [u8] = include_bytes!("../runtime/dist/io.js");

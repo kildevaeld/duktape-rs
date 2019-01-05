@@ -1,23 +1,23 @@
 extern crate duktape;
-extern crate duktape_cjs;
+extern crate duktape_modules;
 
 static SOURCE: &'static [u8] = include_bytes!("../buble/dist/buble.js");
 
 static RUNTIME: &'static [u8] = include_bytes!("../buble/dist/es6.shim.js");
 
 use duktape::prelude::*;
-use duktape_cjs::{require, CJSContext};
+use duktape_modules::{require, CJSContext};
 use std::str;
 
 struct Es6Loader {}
 
-impl duktape_cjs::ModuleLoader for Es6Loader {
+impl duktape_modules::ModuleLoader for Es6Loader {
     fn load(
         &self,
         ctx: &Context,
         module: &Object,
         buffer: &[u8],
-    ) -> duktape_cjs::error::Result<()> {
+    ) -> duktape_modules::error::Result<()> {
         let buble = ctx.require("es2015")?;
         let source = str::from_utf8(buffer)?;
 
@@ -34,7 +34,7 @@ impl duktape_cjs::ModuleLoader for Es6Loader {
     }
 }
 
-pub fn register(ctx: &Context, builder: &mut duktape_cjs::Builder) {
+pub fn register(ctx: &Context, builder: &mut duktape_modules::Builder) {
     ctx.compile_string(RUNTIME, Compile::EVAL).unwrap();
     ctx.call(0).unwrap().pop(1);
 
