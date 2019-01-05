@@ -1,9 +1,0 @@
-[package]
-name = "duktape_buble"
-version = "0.1.0"
-authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-duktape = { path = "../duktape" }
-duktape_cjs = { path = "../duktape_cjs" }

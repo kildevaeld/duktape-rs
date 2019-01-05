@@ -9,7 +9,7 @@ use duktape_cjs::{require, CJSContext};
 use reqwest::{header::HeaderMap, header::HeaderName, Client, Method, Response, Url};
 use std::str::FromStr;
 
-pub static HTTP: &'static [u8] = include_bytes!("http.js");
+pub static HTTP: &'static [u8] = include_bytes!("../runtime/dist/http.js");
 
 struct ClientKey;
 

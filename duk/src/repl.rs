@@ -1,10 +1,12 @@
+use colored::*;
 use duktape::prelude::*;
 use duktape_cjs::error::Result;
+use duktape_cjs::CJSContext;
 use rustyline::error::ReadlineError;
 use rustyline::{ColorMode, CompletionType, Config, EditMode, Editor};
 use std::env;
 
-pub fn run(ctx: &Context) -> Result<()> {
+pub fn run(ctx: &Context, es6: bool) -> Result<()> {
     let require: Object = ctx.get_global_string("require").getp()?;
 
     require.set(
@@ -31,11 +33,28 @@ pub fn run(ctx: &Context) -> Result<()> {
         match readline {
             Ok(line) => {
                 rl.add_history_entry(line.as_ref());
-                match ctx.eval(&line) {
-                    Err(e) => println!("  {:?}", e),
-                    Ok(_) => {}
+
+                let source = if es6 {
+                    ctx.require("es2015")?
+                        .call::<_, _, Object>("transform", line.as_str())?
+                        .get::<_, &str>("code")?
+                } else {
+                    line.as_str()
                 };
-                //println!("Line: {}", line);
+
+                match ctx.eval(source.replace("\'use strict\';", "").trim()) {
+                    Err(e) => println!("  {:?}", e),
+                    Ok(_) => {
+                        let re = ctx.getp::<Ref>()?;
+                        let s = match re.get_type() {
+                            Type::Boolean | Type::Number => format!("{}", re.to_string().yellow()),
+                            Type::Null => format!("{}", re.to_string().white()),
+                            Type::String => format!("'{}'", re.to_string().green()),
+                            _ => format!("{}", re.to_string().bright_black()),
+                        };
+                        println!("{}", s);
+                    }
+                };
             }
             Err(ReadlineError::Interrupted) => {
                 //println!("CTRL-C");

@@ -1,0 +1,1 @@
+module.exports.Reader.prototype.readText=function(a){a=a||new TextDecoder("utf-8");var b=this.readAll();return a.decode(b)},module.exports.Reader.prototype.readJSON=function(a){return JSON.parse(this.readText(a))},Object.freeze(module.exports);

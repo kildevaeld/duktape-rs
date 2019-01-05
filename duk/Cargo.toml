@@ -8,7 +8,9 @@ edition = "2018"
 duktape = { path = "../duktape" }
 duktape_cjs = { path = "../duktape_cjs" }
 duktape_stdlib = { path = "../duktape_stdlib", features = ["http"] }
-duktape_buble = { path = "../duktape_buble" }
+duktape_es2015 = { path = "../duktape_es2015" }
 log = "^0.4"
 env_logger = "^0.5.13"
 rustyline = "^2.1.0"
+colored = "1.6"
+clap = "2.32.0"

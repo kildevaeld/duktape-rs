@@ -15,7 +15,7 @@ mod process;
 use duktape::prelude::*;
 use duktape_cjs::require;
 
-pub static UTILS: &'static [u8] = include_bytes!("utils.js");
+pub static UTILS: &'static [u8] = include_bytes!("../runtime/dist/utils.js");
 pub static POLFILLS: &'static [u8] = include_bytes!("polyfill.js");
 pub static RUNTIME: &'static [u8] = include_bytes!("runtime.js");
 

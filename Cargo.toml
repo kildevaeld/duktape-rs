@@ -5,6 +5,6 @@ members = [
     "duktape",
     "duktape_cjs",
     "duktape_stdlib",
-    "duktape_buble",
+    "duktape_es2015",
     "duk"
 ]

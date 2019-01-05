@@ -18,6 +18,8 @@ pub use self::commonjs::{Builder, CommonJS};
 pub use self::eval::*;
 pub use self::types::{ModuleLoader, ModuleResolver};
 
+static POLYFILLS: &'static [u8] = include_bytes!("polyfills.js");
+
 pub mod require {
     pub use super::internal::*;
 }
@@ -38,6 +40,8 @@ pub fn register(ctx: &duktape::Context, mut builder: Builder) -> duktape::error:
         .put_prop_string(-2, types::KEY);
 
     ctx.pop(1);
+
+    ctx.eval(POLYFILLS)?.pop(1);
 
     if builder.file_loader {
         builder.resolver(

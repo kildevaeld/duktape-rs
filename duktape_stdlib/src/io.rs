@@ -6,7 +6,7 @@ use duktape::{
 use duktape_cjs::require;
 use std::io::{self, Read, Write};
 
-pub static IO_JS: &'static [u8] = include_bytes!("io.js");
+pub static IO_JS: &'static [u8] = include_bytes!("../runtime/dist/io.js");
 
 pub struct WriterKey;
 
