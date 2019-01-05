@@ -5,7 +5,7 @@ use duktape::{
     error::{ErrorKind, Result},
 };
 use duktape_modules::require;
-use std::fs::{File, OpenOptions};
+use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 
 struct FileKey;
@@ -107,18 +107,74 @@ pub fn init_file<'a>() -> class::Builder<'a> {
     file
 }
 
+fn mkdir(ctx: &Context) -> Result<i32> {
+    let path = ctx.get::<&str>(0)?;
+    fs::create_dir(path)?;
+    Ok(0)
+}
+
+fn mkdir_all(ctx: &Context) -> Result<i32> {
+    let path = ctx.get::<&str>(0)?;
+    fs::create_dir_all(path)?;
+    Ok(0)
+}
+
+fn rmdir(ctx: &Context) -> Result<i32> {
+    let path = ctx.get::<&str>(0)?;
+    fs::remove_dir(path)?;
+    Ok(0)
+}
+
+fn rmdir_all(ctx: &Context) -> Result<i32> {
+    let path = ctx.get::<&str>(0)?;
+    fs::remove_dir_all(path)?;
+    Ok(0)
+}
+
+fn rmfile(ctx: &Context) -> Result<i32> {
+    let path = ctx.get::<&str>(0)?;
+    fs::remove_file(path)?;
+    Ok(0)
+}
+
+fn readdir(ctx: &Context) -> Result<i32> {
+    let path = ctx.get::<&str>(0)?;
+    let files = fs::read_dir(path)?
+        .filter_map(|file| {
+            if file.is_err() {
+                return None;
+            }
+
+            let file = file.unwrap().path();
+            let path = file.to_str().unwrap().to_string();
+            Some(path)
+        })
+        .collect::<Vec<_>>();
+
+    ctx.push(files)?;
+
+    Ok(1)
+}
+
 pub fn init_fs(ctx: &Context) -> Result<i32> {
     let exports = ctx.create::<Object>()?;
 
-    exports.set("File", init_file());
+    exports
+        .set("File", init_file())
+        .set("mkdir", (1, mkdir))
+        .set("mkdirAll", (1, mkdir_all))
+        .set("rmdir", (1, rmdir))
+        .set("rmdirAll", (1, rmdir_all))
+        .set("unlink", (1, rmfile))
+        .set("readdir", (1, readdir));
 
     let module: Object = ctx.get(-1)?;
     module.set("exports", exports);
 
+    // Enchance the export with some js goodies
     require::eval_module(ctx, FS, &module).unwrap();
 
     module.get::<_, Ref>("exports")?.push();
 
-    //ctx.push(exports)?;
     Ok(1)
 }

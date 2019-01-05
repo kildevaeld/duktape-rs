@@ -29,14 +29,14 @@ pub fn run(ctx: &Context, es6: bool) -> Result<()> {
         println!("No previous history.");
     }
 
-    let mut nextShouldClose = false;
+    let mut next_should_close = false;
 
     loop {
         let readline = rl.readline("duk> ");
 
         match readline {
             Ok(line) => {
-                nextShouldClose = false;
+                next_should_close = false;
 
                 match line.as_str() {
                     ".exit" => break,
@@ -72,10 +72,10 @@ pub fn run(ctx: &Context, es6: bool) -> Result<()> {
                 };
             }
             Err(ReadlineError::Interrupted) => {
-                if nextShouldClose {
+                if next_should_close {
                     break;
                 }
-                nextShouldClose = true;
+                next_should_close = true;
                 println!("(To exit, press ^C again or type .exit)");
             }
             Err(ReadlineError::Eof) => {
