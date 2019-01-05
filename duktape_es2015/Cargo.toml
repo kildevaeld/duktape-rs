@@ -3,7 +3,12 @@ name = "duktape_es2015"
 version = "0.1.0"
 authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
+build = "build.rs"
 
 [dependencies]
 duktape = { path = "../duktape" }
 duktape_modules = { path = "../duktape_modules" }
+
+[features]
+default = []
+buildtime_bindgen = []

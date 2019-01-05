@@ -1,4 +1,5 @@
 use super::io::ReaderKey;
+use super::sources::HTTP;
 use duktape::prelude::*;
 use duktape::{
     class,
@@ -8,8 +9,6 @@ use duktape::{
 use duktape_modules::{require, CJSContext};
 use reqwest::{header::HeaderMap, header::HeaderName, Client, Method, Response, Url};
 use std::str::FromStr;
-
-pub static HTTP: &'static [u8] = include_bytes!("../runtime/dist/http.js");
 
 struct ClientKey;
 

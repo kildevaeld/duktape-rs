@@ -1,4 +1,4 @@
-bitflags!{
+bitflags! {
     pub struct Modules: i32 {
         const Io = 1 << 0;
         const Fs= 1 << 1;

@@ -11,13 +11,16 @@ mod fs;
 mod http;
 mod io;
 mod process;
+mod sources;
 
 use duktape::prelude::*;
 use duktape_modules::require;
 
-pub static UTILS: &'static [u8] = include_bytes!("../runtime/dist/utils.js");
-pub static POLFILLS: &'static [u8] = include_bytes!("polyfill.js");
-pub static RUNTIME: &'static [u8] = include_bytes!("runtime.js");
+// concat!(env!("OUT_DIR"), "/utils.js")
+
+// pub static UTILS: &'static [u8] = include_bytes!(concat!(env!("OUT_DIR"), "/utils.js"));
+// pub static POLFILLS: &'static [u8] = include_bytes!("polyfill.js");
+// pub static RUNTIME: &'static [u8] = include_bytes!(concat!(env!("OUT_DIR"), "/runtime.js"));
 
 pub use self::builder::Modules;
 
@@ -29,8 +32,8 @@ fn init_http(builder: &mut duktape_modules::Builder, config: &builder::Modules) 
 }
 
 pub fn register(ctx: &Context, builder: &mut duktape_modules::Builder, config: builder::Modules) {
-    ctx.eval(POLFILLS).unwrap();
-    ctx.pop(1);
+    // ctx.eval(POLFILLS).unwrap();
+    // ctx.pop(1);
 
     process::init_process(ctx).unwrap();
 
@@ -45,7 +48,7 @@ pub fn register(ctx: &Context, builder: &mut duktape_modules::Builder, config: b
     if config.contains(Modules::Utils) {
         builder.module("utils", |ctx: &Context| {
             let module: Object = ctx.get(-1)?;
-            require::eval_module(ctx, UTILS, &module).unwrap();
+            require::eval_module(ctx, sources::UTILS, &module).unwrap();
             Ok(1)
         });
     }
@@ -55,9 +58,9 @@ pub fn register(ctx: &Context, builder: &mut duktape_modules::Builder, config: b
 }
 
 pub fn init_runtime(ctx: &Context) {
-    ctx.compile_string(RUNTIME, Compile::EVAL).unwrap();
+    ctx.compile_string(sources::RUNTIME, Compile::EVAL).unwrap();
 
-    ctx.call(0).unwrap();
+    ctx.call(0).unwrap().pop(1);
 
-    ctx.push_global_object().call(1).unwrap();
+    //ctx.push_global_object().call(1).unwrap();
 }

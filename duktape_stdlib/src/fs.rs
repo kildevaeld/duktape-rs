@@ -1,3 +1,4 @@
+use super::sources::FS;
 use duktape::prelude::*;
 use duktape::{
     self,
@@ -6,8 +7,6 @@ use duktape::{
 use duktape_modules::require;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
-
-static FS: &'static [u8] = include_bytes!("fs.js");
 
 struct FileKey;
 

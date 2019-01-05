@@ -40,4 +40,4 @@
             return utils.noop;
         }
     });
-})
+})(global);

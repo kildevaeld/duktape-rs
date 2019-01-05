@@ -1,3 +1,4 @@
+use super::sources::IO_JS;
 use duktape::prelude::*;
 use duktape::{
     self,
@@ -5,8 +6,6 @@ use duktape::{
 };
 use duktape_modules::require;
 use std::io::{self, Read, Write};
-
-pub static IO_JS: &'static [u8] = include_bytes!("../runtime/dist/io.js");
 
 pub struct WriterKey;
 

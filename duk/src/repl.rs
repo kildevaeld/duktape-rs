@@ -1,10 +1,12 @@
 use colored::*;
 use duktape::prelude::*;
-use ECMAScript Modules ::error::Result;
-use ECMAScript Modules ::CJSContext;
+use duktape_modules::error::Result;
+use duktape_modules::CJSContext;
 use rustyline::error::ReadlineError;
 use rustyline::{ColorMode, CompletionType, Config, EditMode, Editor};
 use std::env;
+
+fn print_help() {}
 
 pub fn run(ctx: &Context, es6: bool) -> Result<()> {
     let require: Object = ctx.get_global_string("require").getp()?;
@@ -27,11 +29,24 @@ pub fn run(ctx: &Context, es6: bool) -> Result<()> {
         println!("No previous history.");
     }
 
+    let mut nextShouldClose = false;
+
     loop {
         let readline = rl.readline("duk> ");
 
         match readline {
             Ok(line) => {
+                nextShouldClose = false;
+
+                match line.as_str() {
+                    ".exit" => break,
+                    ".help" => {
+                        print_help();
+                        continue;
+                    }
+                    _ => {}
+                }
+
                 rl.add_history_entry(line.as_ref());
 
                 let source = if es6 {
@@ -57,8 +72,11 @@ pub fn run(ctx: &Context, es6: bool) -> Result<()> {
                 };
             }
             Err(ReadlineError::Interrupted) => {
-                //println!("CTRL-C");
-                break;
+                if nextShouldClose {
+                    break;
+                }
+                nextShouldClose = true;
+                println!("(To exit, press ^C again or type .exit)");
             }
             Err(ReadlineError::Eof) => {
                 //println!("CTRL-D");

@@ -3,6 +3,7 @@ name = "duktape_stdlib"
 version = "0.1.0"
 authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
 edition = "2018"
+build = "build.rs"
 
 [dependencies]
 duktape = { path = "../duktape" }
@@ -13,3 +14,4 @@ reqwest = { version = "^0.9", optional = true }
 [features]
 default = []
 http = ["reqwest"]
+buildtime_bindgen = []
