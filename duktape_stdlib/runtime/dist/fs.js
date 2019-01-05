@@ -1,0 +1,1 @@
+exports.readFile=function(a){var b=new exports.File(a,"r"),c=b.readText();return b.close(),c};
