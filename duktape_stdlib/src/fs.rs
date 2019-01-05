@@ -112,10 +112,6 @@ pub fn init_fs(ctx: &Context) -> Result<i32> {
 
     exports.set("File", init_file());
 
-    // module
-    //     .set("mkdir", duktape::cb(1, Box::new(|_ctx| Ok(0))))
-    //     .set("mkdirAll", duktape::cb(1, Box::new(|_ctx| Ok(0))));
-
     let module: Object = ctx.get(-1)?;
     module.set("exports", exports);
 
