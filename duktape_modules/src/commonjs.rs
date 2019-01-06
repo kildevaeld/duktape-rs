@@ -161,7 +161,7 @@ impl Require {
         {
             Some(resolver) => resolver,
             None => {
-                return Err(ErrorKind::TypeError(format!(
+                return Err(ErrorKind::(format!(
                     "could not find resolver for protocol: '{}'",
                     protocol
                 ))
