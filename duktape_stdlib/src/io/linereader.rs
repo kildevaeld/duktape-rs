@@ -15,7 +15,7 @@ impl class::Method for ReadLineFn {
             Ok(_) => {}
         };
 
-        ctx.push(buffer)?;
+        ctx.push(buffer.trim("\n"))?;
 
         Ok(1)
     }
