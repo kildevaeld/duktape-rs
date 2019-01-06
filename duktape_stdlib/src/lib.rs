@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate duktape;
 extern crate duktape_modules;
 #[macro_use]
@@ -16,12 +17,6 @@ mod sources;
 use duktape::prelude::*;
 use duktape_modules::require;
 
-// concat!(env!("OUT_DIR"), "/utils.js")
-
-// pub static UTILS: &'static [u8] = include_bytes!(concat!(env!("OUT_DIR"), "/utils.js"));
-// pub static POLFILLS: &'static [u8] = include_bytes!("polyfill.js");
-// pub static RUNTIME: &'static [u8] = include_bytes!(concat!(env!("OUT_DIR"), "/runtime.js"));
-
 pub use self::builder::Modules;
 
 #[cfg(feature = "http")]
@@ -37,9 +32,11 @@ pub fn register(ctx: &Context, builder: &mut duktape_modules::Builder, config: b
 
     process::init_process(ctx).unwrap();
 
-    if config.contains(Modules::Io) {
-        builder.module("io", |ctx: &Context| io::init_io(ctx));
-    }
+    io::register(ctx, builder);
+
+    // if config.contains(Modules::Io) {
+    //     builder.module("io", |ctx: &Context| io::init_io(ctx));
+    // }
 
     if config.contains(Modules::Fs) {
         builder.module("fs", |ctx: &Context| fs::init_fs(ctx));

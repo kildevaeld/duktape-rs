@@ -10,11 +10,13 @@ mod callable;
 pub mod class;
 mod context;
 pub mod error;
+mod macros;
 mod privates;
 pub mod types;
 
 pub use self::callable::Callable;
 pub use self::context::*;
+pub use self::macros::*;
 pub use self::typemap::Key;
 
 pub mod prelude {
@@ -25,6 +27,7 @@ pub mod prelude {
     pub use super::error::ErrorKind as DukErrorKind;
     pub use super::error::Result as DukResult;
     pub use super::types::*;
+    pub use super::macros::*;
 }
 
 #[cfg(test)]

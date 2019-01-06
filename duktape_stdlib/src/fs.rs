@@ -1,18 +1,21 @@
+use super::io as dukio;
 use super::sources::FS;
 use duktape::prelude::*;
-use duktape::{
-    self,
-    error::{ErrorKind, Result},
-};
+use duktape::{self, error::Result};
 use duktape_modules::require;
 use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Write};
+use std::io::{self, BufRead};
 
-struct FileKey;
+// impl dukio::Reader for File {
+//     fn read_line(&mut self, line: &mut String) -> io::Result<usize> {
+//         let mut reader = io::BufReader::new(self);
+//         reader.read_line(line)
+//     }
+// }
 
-impl duktape::Key for FileKey {
-    type Value = File;
-}
+// impl dukio::Writer for File {}
+
+impl dukio::ReadWriter for File {}
 
 fn get_file_options(input: &str) -> OpenOptions {
     let mut o = OpenOptions::new();
@@ -29,7 +32,7 @@ fn get_file_options(input: &str) -> OpenOptions {
     o
 }
 
-pub fn init_file<'a>() -> class::Builder<'a> {
+pub fn init_file<'a>(ctx: &'a Context) -> DukResult<class::Builder<'a>> {
     let mut file = class::build();
 
     file.constructor((2, |ctx: &Context, this: &mut class::Instance| {
@@ -44,67 +47,26 @@ pub fn init_file<'a>() -> class::Builder<'a> {
         }
 
         let file = options.open(path).unwrap();
-        this.data_mut().insert::<FileKey>(file);
+
+        this.data_mut()
+            .insert::<dukio::ReadWriterKey>(dukio::IOReadWriter::new(file));
 
         Ok(0)
     }))
-    .method(
-        "read",
-        (1, |ctx: &Context, this: &mut class::Instance| {
-            let file = this.data_mut().get_mut::<FileKey>().unwrap();
-
-            let mut cap = 256;
-            if ctx.is(Type::Number, 0) {
-                cap = ctx.get(0)?;
-            }
-
-            let mut buffer = Vec::with_capacity(cap);
-            file.read(&mut buffer).unwrap();
-            ctx.push(buffer.as_slice())?;
-
-            Ok(1)
-        }),
-    )
-    .method(
-        "write",
-        (1, |ctx: &Context, this: &mut class::Instance| {
-            let writer = match this.data_mut().get_mut::<FileKey>() {
-                Some(w) => w,
-                None => return Err(ErrorKind::TypeError("file closed".to_owned()).into()),
-            };
-
-            if ctx.is(Type::Undefined, 0) {
-                return Err(ErrorKind::TypeError("invalid type".to_owned()).into());
-            }
-
-            let r = ctx.get::<Ref>(0)?;
-            write!(writer, "{}", r).unwrap();
-
-            ctx.push_this();
-            Ok(1)
-        }),
-    )
-    .method("flush", |ctx: &Context, this: &mut class::Instance| {
-        let writer = match this.data_mut().get_mut::<FileKey>() {
-            Some(w) => w,
-            None => return Ok(0),
-        };
-        writer.flush().unwrap();
-        ctx.push_this();
-        Ok(1)
-    })
     .method("close", |ctx: &Context, this: &mut class::Instance| {
-        let writer = match this.data_mut().get_mut::<FileKey>() {
+        let writer = match this.data_mut().get_mut::<dukio::ReadWriterKey>() {
             Some(w) => w,
             None => return Ok(0),
         };
         drop(writer);
-        this.data_mut().remove::<FileKey>();
+        this.data_mut().remove::<dukio::ReadWriterKey>();
         ctx.push_this();
         Ok(1)
     });
 
-    file
+    file = dukio::inherit_readwriter(ctx, file)?;
+
+    Ok(file)
 }
 
 fn mkdir(ctx: &Context) -> Result<i32> {
@@ -160,7 +122,7 @@ pub fn init_fs(ctx: &Context) -> Result<i32> {
     let exports = ctx.create::<Object>()?;
 
     exports
-        .set("File", init_file())
+        .set("File", init_file(ctx)?)
         .set("mkdir", (1, mkdir))
         .set("mkdirAll", (1, mkdir_all))
         .set("rmdir", (1, rmdir))

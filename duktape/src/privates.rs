@@ -58,7 +58,7 @@ pub unsafe fn init_refs(ctx: *mut duk_context) {
     duk::duk_pop(ctx);
 }
 
-unsafe fn get_refs(ctx: *mut duk_context) -> bool {
+pub unsafe fn get_refs(ctx: *mut duk_context) -> bool {
     duk::duk_push_global_stash(ctx);
     if duk::duk_has_prop_lstring(ctx, -1, REF_KEY.as_ptr() as *const i8, 4) == 0 {
         duk::duk_pop(ctx);

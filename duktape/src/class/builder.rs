@@ -1,5 +1,8 @@
 use super::super::types::{Function, ToDuktape};
-use super::super::{error::{Result, ErrorKind}, Context, Idx};
+use super::super::{
+    error::{ErrorKind, Result},
+    Context, Idx,
+};
 use super::method::{push_method, Instance, Method, CTOR_KEY, DATA_KEY};
 use duktape_sys as duk;
 use std::collections::HashMap;
@@ -11,12 +14,18 @@ pub enum Prototype {
 
 #[derive(Default)]
 pub struct Builder<'a> {
+    name: String,
     ctor: Option<Box<dyn Method>>,
     parent: Option<Function<'a>>,
     methods: HashMap<String, Prototype>,
 }
 
 impl<'a> Builder<'a> {
+    pub fn name(&mut self, name: &str) -> &mut Self {
+        self.name = name.to_owned();
+        self
+    }
+
     pub fn set(&mut self, name: &str, prop: Prototype) -> &mut Self {
         self.methods.insert(name.to_owned(), prop);
         self
@@ -49,6 +58,16 @@ impl<'a> ToDuktape for Builder<'a> {
 pub(crate) unsafe fn push_class_builder(ctx: &Context, builder: Builder) -> Result<()> {
     duk::duk_push_c_function(ctx.inner, Some(class_ctor), duk::DUK_VARARGS);
 
+    if !builder.name.is_empty() {
+        ctx.push_string("name").push_string(builder.name);
+
+        duk::duk_def_prop(
+            ctx.inner,
+            -3,
+            duk::DUK_DEFPROP_HAVE_VALUE | duk::DUK_DEFPROP_FORCE,
+        );
+    }
+
     if let Some(parent) = builder.parent {
         ctx.get_global_string("Object")
             .push_string("create")
@@ -57,6 +76,7 @@ pub(crate) unsafe fn push_class_builder(ctx: &Context, builder: Builder) -> Resu
             .remove(-2)
             .call_prop(-3, 1)?
             .remove(-2);
+        ctx.dup(1).put_prop_string(-3, "__super__");
     } else {
         ctx.push_object();
     }
@@ -106,14 +126,14 @@ unsafe extern "C" fn class_ctor(ctx: *mut duk::duk_context) -> duk::duk_ret_t {
         let mut c = Context::with(ctx);
         match ctor.call(&mut c, &mut instance) {
             Ok(_) => {}
-            Err(_) => {
+            Err(e) => {
                 Box::into_raw(ctor);
                 duk::duk_error_raw(
                     ctx,
                     duk::DUK_ERR_ERROR as i32,
                     "".as_ptr() as *const i8,
                     0,
-                    "could find data ptr".as_ptr() as *const i8,
+                    format!("ctor call failed: {}", e).as_ptr() as *const i8,
                 );
                 return 0;
             }
@@ -158,11 +178,11 @@ unsafe extern "C" fn class_dtor(ctx: *mut duk::duk_context) -> duk::duk_ret_t {
     0
 }
 
-pub fn get_instance<Func: FnOnce(&mut Instance) -> Result<()>>(
+pub fn get_instance<Func: FnOnce(&mut Instance) -> Result<T>, T>(
     ctx: &Context,
     idx: Idx,
     cb: Func,
-) -> Result<()> {
+) -> Result<T> {
     if ctx.has_prop_string(idx, DATA_KEY) {
         let mut instance = unsafe {
             duk::duk_get_prop_lstring(
@@ -179,7 +199,7 @@ pub fn get_instance<Func: FnOnce(&mut Instance) -> Result<()>>(
 
         let ret = cb(&mut instance);
         Box::into_raw(instance);
-        return ret
+        return ret;
     }
     bail!(ErrorKind::ReferenceError(format!("not a instance")))
 }

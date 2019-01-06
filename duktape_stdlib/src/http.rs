@@ -1,4 +1,4 @@
-use super::io::ReaderKey;
+use super::io::{inherit_reader, IOReader, ReaderKey};
 use super::sources::HTTP;
 use duktape::prelude::*;
 use duktape::{
@@ -90,40 +90,17 @@ fn push_response(ctx: &Context, resp: Response) -> Result<Object> {
         .unwrap()
         .get::<_, Ref>("ResponseReader")?
         .push();
+
     ctx.construct(0)?;
     duktape::class::get_instance(ctx, -1, move |this| {
-        this.data_mut().insert::<ReaderKey>(Box::new(resp));
+        this.data_mut().insert::<ReaderKey>(IOReader::new(resp));
         Ok(())
     })?;
 
     o.set("body", ctx.getp::<Ref>()?);
 
-    // let mut body = Vec::new();
-    // match resp.read_to_end(&mut body) {
-    //     Ok(_) => (),
-    //     Err(e) => return Err(ErrorKind::Error(format!("could not read body: {}", e)).into()),
-    // };
-
-    // o.set("body", body.as_slice());
-
     Ok(o)
 }
-
-// fn request(method: Method, ctx: &Context, _: &mut class::Instance) -> Result<i32> {
-//     let o = if ctx.is(Type::String, 0) {
-//         let o = ctx.create::<Object>()?;
-//         o.set("url", ctx.get::<&str>(0)?);
-//         o
-//     } else {
-//         ctx.get::<Object>(0)?
-//     };
-
-//     o.set("method", method.to_string());
-
-//     let this = ctx.push_this().getp::<Object>()?;
-//     this.call::<_, _, Ref>("request", o)?.push();
-//     Ok(1)
-// }
 
 fn build_client_class<'a>() -> class::Builder<'a> {
     let mut b = class::build();
@@ -142,36 +119,6 @@ fn build_client_class<'a>() -> class::Builder<'a> {
             Ok(1)
         }),
     );
-    // .method(
-    //     "get",
-    //     (1, |ctx: &Context, this: &mut class::Instance| {
-    //         request(Method::GET, ctx, this)
-    //     }),
-    // )
-    // .method(
-    //     "post",
-    //     (1, |ctx: &Context, this: &mut class::Instance| {
-    //         request(Method::POST, ctx, this)
-    //     }),
-    // )
-    // .method(
-    //     "put",
-    //     (1, |ctx: &Context, this: &mut class::Instance| {
-    //         request(Method::PUT, ctx, this)
-    //     }),
-    // )
-    // .method(
-    //     "patch",
-    //     (1, |ctx: &Context, this: &mut class::Instance| {
-    //         request(Method::PATCH, ctx, this)
-    //     }),
-    // )
-    // .method(
-    //     "del",
-    //     (1, |ctx: &Context, this: &mut class::Instance| {
-    //         request(Method::DELETE, ctx, this)
-    //     }),
-    // );
 
     b
 }
@@ -179,16 +126,16 @@ fn build_client_class<'a>() -> class::Builder<'a> {
 fn build_body_class(ctx: &Context) -> Result<class::Builder> {
     let mut b = class::build();
 
-    let ctor = ctx
-        .get_global_string("require")
-        .push_string("io")
-        .call(1)?
-        .get_prop_string(-1, "Reader")
-        .getp::<Function>()?;
+    // let ctor = ctx
+    //     .get_global_string("require")
+    //     .push_string("io")
+    //     .call(1)?
+    //     .get_prop_string(-1, "Reader")
+    //     .getp::<Function>()?;
 
-    ctx.pop(1);
+    // ctx.pop(1);
 
-    b.inherit(ctor);
+    b = inherit_reader(ctx, b)?;
 
     Ok(b)
 }

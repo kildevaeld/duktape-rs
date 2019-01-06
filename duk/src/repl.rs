@@ -40,6 +40,15 @@ pub fn run(ctx: &Context, es6: bool) -> Result<()> {
 
                 match line.as_str() {
                     ".exit" => break,
+                    ".stack" => {
+                        println!("{:?}", ctx);
+                        continue;
+                    }
+                    ".refs" => {
+                        ctx.push_global_stash();
+
+                        continue;
+                    }
                     ".help" => {
                         print_help();
                         continue;
