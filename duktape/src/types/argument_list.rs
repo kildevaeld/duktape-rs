@@ -43,6 +43,21 @@ impl<'a> ArgumentList for &'a [u8] {
     }
 }
 
+// impl<T: ToDuktape> ArgumentList for T
+// where
+//     T: ToDuktape,
+// {
+//     fn len(&self) -> i32 {
+//         1
+//     }
+
+//     fn push_args(self, ctx: &Context) -> Result<()> {
+//         // ctx.push_bytes(self);
+//         // Ok(())
+//         self.to_context(ctx)
+//     }
+// }
+
 #[cfg(feature = "value")]
 impl ArgumentList for Value {
     fn len(&self) -> i32 {

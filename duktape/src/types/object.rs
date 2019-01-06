@@ -34,8 +34,6 @@ impl<'a> Object<'a> {
         self
     }
 
-    
-
     /// Check if object has property
     pub fn has<T: AsRef<[u8]>>(&self, prop: T) -> bool {
         self.refer.push();

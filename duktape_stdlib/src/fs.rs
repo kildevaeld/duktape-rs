@@ -15,7 +15,7 @@ use std::io::{self, BufRead};
 
 // impl dukio::Writer for File {}
 
-impl dukio::ReadWriter for File {}
+//impl dukio::ReadWriter for File {}
 
 fn get_file_options(input: &str) -> OpenOptions {
     let mut o = OpenOptions::new();

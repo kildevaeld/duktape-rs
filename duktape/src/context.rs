@@ -633,9 +633,10 @@ impl Drop for Context {
 impl fmt::Debug for Context {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.dump())?;
-        unsafe { privates::get_refs(self.inner) };
-        write!(f, "refs: {}", self.dump())?;
-        self.pop(1);
+        // unsafe { privates::get_refs(self.inner) };
+
+        // write!(f, "refs: {}", self.dump())?;
+        // self.pop(1);
         Ok(())
     }
 }

@@ -1,3 +1,5 @@
+#![feature(get_type_id)]
+
 #[macro_use]
 extern crate duktape;
 extern crate duktape_modules;
@@ -27,16 +29,10 @@ fn init_http(builder: &mut duktape_modules::Builder, config: &builder::Modules) 
 }
 
 pub fn register(ctx: &Context, builder: &mut duktape_modules::Builder, config: builder::Modules) {
-    // ctx.eval(POLFILLS).unwrap();
-    // ctx.pop(1);
 
     process::init_process(ctx).unwrap();
 
     io::register(ctx, builder);
-
-    // if config.contains(Modules::Io) {
-    //     builder.module("io", |ctx: &Context| io::init_io(ctx));
-    // }
 
     if config.contains(Modules::Fs) {
         builder.module("fs", |ctx: &Context| fs::init_fs(ctx));
@@ -59,5 +55,4 @@ pub fn init_runtime(ctx: &Context) {
 
     ctx.call(0).unwrap().pop(1);
 
-    //ctx.push_global_object().call(1).unwrap();
 }

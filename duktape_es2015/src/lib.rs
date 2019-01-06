@@ -5,10 +5,6 @@ static SOURCE: &'static [u8] = include_bytes!(concat!(env!("OUT_DIR"), "/buble.j
 static RUNTIME: &'static [u8] = include_bytes!(concat!(env!("OUT_DIR"), "/es6.shim.js"));
 
 
-// static SOURCE: &'static [u8] = include_bytes!("../buble/dist/buble.js");
-
-// static RUNTIME: &'static [u8] = include_bytes!("../buble/dist/es6.shim.js");
-
 use duktape::prelude::*;
 use duktape_modules::{require, CJSContext};
 use std::str;

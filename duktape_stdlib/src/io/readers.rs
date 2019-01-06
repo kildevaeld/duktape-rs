@@ -78,23 +78,7 @@ impl class::Method for ReadAllFn {
     }
 }
 
-// pub(crate) struct ReadLineFn;
 
-// impl class::Method for ReadLineFn {
-//     fn call(&self, ctx: &Context, this: &mut class::Instance) -> DukResult<i32> {
-//         let reader = get_reader(ctx, this)?;
-
-//         let mut buffer = String::new();
-//         match reader.read_line(&mut buffer) {
-//             Err(e) => duk_error!(format!("error while reading: {}", e)),
-//             Ok(_) => {}
-//         };
-
-//         ctx.push(buffer)?;
-
-//         Ok(1)
-//     }
-// }
 
 pub(crate) fn build_reader<'a>(ctx: &'a Context) -> DukResult<Function<'a>> {
     let mut reader = class::build();

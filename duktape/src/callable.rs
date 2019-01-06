@@ -84,6 +84,10 @@ impl<T: Fn(&Context) -> Result<i32>> Callable for T {
     }
 }
 
+// impl<T: Callable> ToDuktape for T {
+
+// }
+
 impl<T: 'static + Fn(&Context) -> Result<i32>> ToDuktape for T {
     fn to_context(self, ctx: &Context) -> Result<()> {
         let boxed: Box<dyn Callable> = Box::new(self);
