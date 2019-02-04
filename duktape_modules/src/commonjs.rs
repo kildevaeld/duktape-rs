@@ -161,11 +161,11 @@ impl Require {
         {
             Some(resolver) => resolver,
             None => {
-                return Err(ErrorKind::(format!(
+                return Err(ErrorKind::TypeError(format!(
                     "could not find resolver for protocol: '{}'",
                     protocol
                 ))
-                .into())
+                .into());
             }
         };
 

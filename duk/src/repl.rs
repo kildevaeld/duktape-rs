@@ -45,7 +45,7 @@ pub fn run(ctx: &Context, es6: bool) -> Result<()> {
                         continue;
                     }
                     ".refs" => {
-                        ctx.push_global_stash().;
+                        // ctx.push_global_stash().;
 
                         continue;
                     }

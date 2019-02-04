@@ -1,5 +1,3 @@
-#![feature(get_type_id)]
-
 #[macro_use]
 extern crate duktape;
 extern crate duktape_modules;
@@ -29,7 +27,6 @@ fn init_http(builder: &mut duktape_modules::Builder, config: &builder::Modules) 
 }
 
 pub fn register(ctx: &Context, builder: &mut duktape_modules::Builder, config: builder::Modules) {
-
     process::init_process(ctx).unwrap();
 
     io::register(ctx, builder);
@@ -54,5 +51,4 @@ pub fn init_runtime(ctx: &Context) {
     ctx.compile_string(sources::RUNTIME, Compile::EVAL).unwrap();
 
     ctx.call(0).unwrap().pop(1);
-
 }
