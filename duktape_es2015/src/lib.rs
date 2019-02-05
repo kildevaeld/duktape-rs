@@ -4,7 +4,6 @@ extern crate duktape_modules;
 static SOURCE: &'static [u8] = include_bytes!(concat!(env!("OUT_DIR"), "/buble.js"));
 static RUNTIME: &'static [u8] = include_bytes!(concat!(env!("OUT_DIR"), "/es6.shim.js"));
 
-
 use duktape::prelude::*;
 use duktape_modules::{require, CJSContext};
 use std::str;
@@ -21,9 +20,14 @@ impl duktape_modules::ModuleLoader for Es6Loader {
         let buble = ctx.require("es2015")?;
         let source = str::from_utf8(buffer)?;
 
+        // let options: Object = ctx.create()?;
+        // options.set("presets", vec!["es2015"]);
+        // options.set("plugins", vec!["transform-decorators-legacy"]);
+
         let options: Object = ctx.create()?;
-        options.set("presets", vec!["es2015"]);
-        options.set("plugins", vec!["transform-decorators-legacy"]);
+        let transforms: Object = ctx.create()?;
+        transforms.set("dangerousForOf", true);
+        options.set("transforms", transforms);
 
         let out = buble.call::<_, _, Object>("transform", (source, options))?;
         let code = out.get::<_, &str>("code")?;
