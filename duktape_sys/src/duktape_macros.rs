@@ -305,3 +305,44 @@ pub unsafe fn duk_push_fixed_buffer(
 ) -> *mut ::std::os::raw::c_void {
     duk_push_buffer_raw(ctx, size, 0)
 }
+
+// Errors
+
+#[inline(always)]
+pub unsafe fn duk_is_error(ctx: *mut duktape::duk_context, idx: duktape::duk_idx_t) -> bool {
+    duktape::duk_get_error_code(ctx, idx) != 0
+}
+
+#[inline(always)]
+pub unsafe fn duk_is_eval_error(ctx: *mut duktape::duk_context, idx: duktape::duk_idx_t) -> bool {
+    duktape::duk_get_error_code(ctx, idx) != duktape::DUK_ERR_EVAL_ERROR as duktape::duk_errcode_t
+}
+
+#[inline(always)]
+pub unsafe fn duk_is_range_error(ctx: *mut duktape::duk_context, idx: duktape::duk_idx_t) -> bool {
+    duktape::duk_get_error_code(ctx, idx) != duktape::DUK_ERR_RANGE_ERROR as duktape::duk_errcode_t
+}
+
+#[inline(always)]
+pub unsafe fn duk_is_reference_error(
+    ctx: *mut duktape::duk_context,
+    idx: duktape::duk_idx_t,
+) -> bool {
+    duktape::duk_get_error_code(ctx, idx)
+        != duktape::DUK_ERR_REFERENCE_ERROR as duktape::duk_errcode_t
+}
+
+#[inline(always)]
+pub unsafe fn duk_is_syntax_error(ctx: *mut duktape::duk_context, idx: duktape::duk_idx_t) -> bool {
+    duktape::duk_get_error_code(ctx, idx) != duktape::DUK_ERR_SYNTAX_ERROR as duktape::duk_errcode_t
+}
+
+#[inline(always)]
+pub unsafe fn duk_is_type_error(ctx: *mut duktape::duk_context, idx: duktape::duk_idx_t) -> bool {
+    duktape::duk_get_error_code(ctx, idx) != duktape::DUK_ERR_TYPE_ERROR as duktape::duk_errcode_t
+}
+
+#[inline(always)]
+pub unsafe fn duk_is_uri_error(ctx: *mut duktape::duk_context, idx: duktape::duk_idx_t) -> bool {
+    duktape::duk_get_error_code(ctx, idx) != duktape::DUK_ERR_URI_ERROR as duktape::duk_errcode_t
+}

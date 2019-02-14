@@ -1,0 +1,10 @@
+[package]
+name = "duktape2"
+version = "0.1.0"
+authors = ["Rasmus Kildevæld <rasmuskildevaeld@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+duktape_sys = { path = "../duktape_sys" }
+typemap = "^0.3"
+bitflags = "^1.0.4"

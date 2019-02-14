@@ -1,19 +1,32 @@
 use super::callable::{push_callable, Callable};
-use super::class::{push_class_builder, Builder};
-use super::error::{ErrorKind, Result, DukError, DukErrorKind};
+use super::error::{DukError, DukErrorCode, DukResult, InsufficientMemory};
 use super::privates;
-use super::types::{FromDuktape, ToDuktape, Type};
 use duktape_sys::{self as duk, duk_context};
 use std::ffi::CStr;
 use std::fmt;
 use std::ptr;
 use typemap::TypeMap;
 
-pub type Idx = i32;
-
-pub trait Constructable<'ctor>: Sized {
-    fn construct(duk: &'ctor Context) -> Result<Self>;
+#[derive(PartialEq, Debug)]
+pub enum Type {
+    Undefined,
+    Null,
+    String,
+    Boolean,
+    Number,
+    Object,
+    Array,
+    Function,
+    Buffer,
 }
+
+pub type Idx = i32;
+pub type CallRet = i32;
+pub use duk::DUK_VARARGS;
+
+// pub trait Constructable<'ctor>: Sized {
+//     fn construct(duk: &'ctor Context) -> Result<Self>;
+// }
 
 bitflags! {
     pub struct Compile: u32 {
@@ -48,14 +61,14 @@ bitflags! {
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum ErrorCode {
-    None,                          /* no error (e.g. from duk_get_error_code()) */
-    Error,                         /* Error */
-    Eval,                    /* EvalError */
-    Range,                   /* RangeError */
-    Reference,               /* ReferenceError */
-    Syntax,                  /* SyntaxError */
-    Type,                   /* TypeError */
-    Uri, 
+    None,      /* no error (e.g. from duk_get_error_code()) */
+    Error,     /* Error */
+    Eval,      /* EvalError */
+    Range,     /* RangeError */
+    Reference, /* ReferenceError */
+    Syntax,    /* SyntaxError */
+    Type,      /* TypeError */
+    Uri,
 }
 
 pub struct Context {
@@ -81,7 +94,7 @@ macro_rules! handle_error {
             }
             $ctx.pop(2);
 
-            return Err(ErrorKind::TypeError(msg).into());
+            return Err(DukError::type_err(msg));
         }
     };
 }
@@ -124,10 +137,10 @@ impl Context {
     /// Create a new context
     /// Will return an error, if a duk heap couldn't be created
     /// The context manage the lifetime of the wrapped duktape context
-    pub fn new() -> Result<Context> {
+    pub fn new() -> DukResult<Context> {
         let d = unsafe { duk::duk_create_heap_default() };
         if d.is_null() {
-            return Err(ErrorKind::InsufficientMemory.into());
+            return Err(InsufficientMemory.into());
         }
 
         unsafe { privates::init_refs(d) };
@@ -152,26 +165,26 @@ impl Context {
         }
     }
 
-    pub fn data<'a>(&'a self) -> Result<&'a TypeMap> {
+    pub fn data<'a>(&'a self) -> DukResult<&'a TypeMap> {
         unsafe {
             if self.data.is_null() {
-                return Err(ErrorKind::InsufficientMemory.into());
+                return Err(InsufficientMemory.into());
             }
             Ok(&*self.data)
         }
     }
 
-    pub fn data_mut<'a>(&'a self) -> Result<&'a mut TypeMap> {
+    pub fn data_mut<'a>(&'a self) -> DukResult<&'a mut TypeMap> {
         unsafe {
             if self.data.is_null() {
-                return Err(ErrorKind::InsufficientMemory.into());
+                return Err(InsufficientMemory.into());
             }
             Ok(&mut *self.data)
         }
     }
 
     /// Evaluate a script
-    pub fn eval<T: AsRef<[u8]>>(&self, script: T) -> Result<&Self> {
+    pub fn eval<T: AsRef<[u8]>>(&self, script: T) -> DukResult<&Self> {
         let script = script.as_ref();
 
         let ret = unsafe {
@@ -183,14 +196,14 @@ impl Context {
         Ok(self)
     }
 
-    pub fn compile(&self, flags: Compile) -> Result<&Self> {
+    pub fn compile(&self, flags: Compile) -> DukResult<&Self> {
         let ret = unsafe { duk::duk_pcompile(self.inner, flags.bits()) };
         handle_error!(ret, self);
 
         Ok(self)
     }
 
-    pub fn compile_string<T: AsRef<[u8]>>(&self, content: T, flags: Compile) -> Result<()> {
+    pub fn compile_string<T: AsRef<[u8]>>(&self, content: T, flags: Compile) -> DukResult<&Self> {
         let content = content.as_ref();
         let len = content.len();
 
@@ -199,7 +212,7 @@ impl Context {
         };
         handle_error!(ret, self);
 
-        Ok(())
+        Ok(self)
     }
 
     pub fn compile_string_filename<T: AsRef<[u8]>>(
@@ -207,7 +220,7 @@ impl Context {
         content: T,
         file_name: &str,
         flags: Compile,
-    ) -> Result<()> {
+    ) -> DukResult<&Self> {
         let content = content.as_ref();
         let len = content.len();
 
@@ -222,7 +235,7 @@ impl Context {
         };
         handle_error!(ret, self);
 
-        Ok(())
+        Ok(self)
     }
 
     pub fn dump(&self) -> String {
@@ -294,28 +307,26 @@ impl Context {
     push_impl!(push_global_stash, duk_push_global_stash);
     push_impl!(push_this, duk_push_this);
     push_impl!(push_current_function, duk_push_current_function);
-    
-    pub fn get_error_code(&self, idx: Idx) -> ErrorCode {
-        let code = unsafe {
-            duk::duk_get_error_code(self.inner, idx) as u32
-        };
+
+    pub fn get_error_code(&self, idx: Idx) -> DukErrorCode {
+        let code = unsafe { duk::duk_get_error_code(self.inner, idx) as u32 };
         match code {
-            duk::DUK_ERR_NONE => ErrorCode::None,
-            duk::DUK_ERR_ERROR => ErrorCode::Error, 
-            duk::DUK_ERR_EVAL_ERROR => ErrorCode::Eval,
-            duk::DUK_ERR_RANGE_ERROR => ErrorCode::Range,
-            duk::DUK_ERR_REFERENCE_ERROR => ErrorCode::Reference,
-            duk::DUK_ERR_SYNTAX_ERROR => ErrorCode::Syntax,
-            duk::DUK_ERR_TYPE_ERROR =>  ErrorCode::Type,
-            duk::DUK_ERR_URI_ERROR => ErrorCode::Uri,
+            duk::DUK_ERR_NONE => DukErrorCode::None,
+            duk::DUK_ERR_ERROR => DukErrorCode::Error,
+            duk::DUK_ERR_EVAL_ERROR => DukErrorCode::Eval,
+            duk::DUK_ERR_RANGE_ERROR => DukErrorCode::Range,
+            duk::DUK_ERR_REFERENCE_ERROR => DukErrorCode::Reference,
+            duk::DUK_ERR_SYNTAX_ERROR => DukErrorCode::Syntax,
+            duk::DUK_ERR_TYPE_ERROR => DukErrorCode::Type,
+            duk::DUK_ERR_URI_ERROR => DukErrorCode::Uri,
             _ => unreachable!("should not happen"),
         }
     }
 
-    pub fn get_error<'a>(&'a self, idx:Idx) -> Result<DukError<'a>> {
-        let ty = self.get_error_code(idx);
-        if ty == ErrorCode::None {
-            bail!(ErrorKind::TypeError(format!("error")));
+    pub fn get_error<'a>(&'a self, idx: Idx) -> DukResult<DukError> {
+        let code = self.get_error_code(idx);
+        if code == DukErrorCode::None {
+            duk_type_error!("not an error");
         }
 
         if self.has_prop_string(-1, "stack") {
@@ -330,67 +341,56 @@ impl Context {
         } else {
             msg = "Uknown";
         }
-        
+
         self.pop(1);
 
-        let kind = match ty {
-            ErrorCode::None => unreachable!("should not happen"),
-            ErrorCode::Error => DukErrorKind::Error(msg),
-            ErrorCode::Eval => DukErrorKind::Eval(msg),
-            ErrorCode::Range => DukErrorKind::Range(msg),
-            ErrorCode::Reference => DukErrorKind::Reference(msg),
-            ErrorCode::Syntax => DukErrorKind::Syntax(msg),
-            ErrorCode::Type => DukErrorKind::Type(msg),
-            ErrorCode::Uri => DukErrorKind::Uri(msg),
-        };
-
-        Ok(DukError::new(kind))
+        Ok(DukError::new(code, msg))
     }
 
-    pub fn get_number(&self, idx: Idx) -> Result<f64> {
+    pub fn get_number(&self, idx: Idx) -> DukResult<f64> {
         if !self.is_number(idx) {
-            bail!(ErrorKind::TypeError(format!("number")));
+            duk_type_error!("not a number");
         }
         let ret = unsafe { duk::duk_get_number(self.inner, idx) };
         Ok(ret)
     }
 
-    pub fn get_int(&self, idx: Idx) -> Result<i32> {
+    pub fn get_int(&self, idx: Idx) -> DukResult<i32> {
         if !self.is_number(idx) {
-            bail!(ErrorKind::TypeError(format!("number")));
+            duk_type_error!("not an integer");
         }
         let ret = unsafe { duk::duk_get_int(self.inner, idx) };
         Ok(ret)
     }
 
-    pub fn get_uint(&self, idx: Idx) -> Result<u32> {
+    pub fn get_uint(&self, idx: Idx) -> DukResult<u32> {
         if !self.is_number(idx) {
-            bail!(ErrorKind::TypeError(format!("number")));
+            duk_type_error!("not an unsigned integer");
         }
         let ret = unsafe { duk::duk_get_uint(self.inner, idx) };
         Ok(ret)
     }
 
-    pub fn get_boolean(&self, idx: Idx) -> Result<bool> {
+    pub fn get_boolean(&self, idx: Idx) -> DukResult<bool> {
         if !self.is_boolean(idx) {
-            bail!(ErrorKind::TypeError(format!("boolean")));
+            duk_type_error!("not a boolean");
         }
         let ok = unsafe { duk::duk_get_boolean(self.inner, idx) };
         Ok(if ok == 1 { true } else { false })
     }
 
-    pub fn get_string(&self, idx: Idx) -> Result<&str> {
+    pub fn get_string(&self, idx: Idx) -> DukResult<&str> {
         if !self.is_string(idx) {
-            bail!(ErrorKind::TypeError(format!("string")));
+            duk_type_error!("not a string");
         }
         let ostr = unsafe { duk::duk_get_string(self.inner, idx) };
         let s = unsafe { CStr::from_ptr(ostr).to_str()? }; //.to_string();
         Ok(s)
     }
 
-    pub fn get_bytes(&self, idx: Idx) -> Result<&[u8]> {
+    pub fn get_bytes(&self, idx: Idx) -> DukResult<&[u8]> {
         if !self.is_buffer(idx) {
-            bail!(ErrorKind::TypeError(format!("buffer")));
+            duk_type_error!("not a buffer");
         }
 
         let r = unsafe {
@@ -407,8 +407,6 @@ impl Context {
 
         Ok(r)
     }
-
-
 
     pub fn get_global_string<T: AsRef<[u8]>>(&self, name: T) -> &Self {
         unsafe {
@@ -613,33 +611,33 @@ impl Context {
     }
 
     // Strings
-    pub fn concat(&self, argc: i32) -> Result<()> {
+    pub fn concat(&self, argc: i32) -> DukResult<()> {
         if argc > self.top() {
-            return Err(ErrorKind::ReferenceError(format!("invalid index: {}", argc)).into());
+            duk_reference_error!(format!("invalid index: {}", argc));
         }
         unsafe { duk::duk_concat(self.inner, argc) };
         Ok(())
     }
 
-    pub fn call(&self, args: i32) -> Result<&Self> {
+    pub fn call(&self, args: i32) -> DukResult<&Self> {
         let ret = unsafe { duk::duk_pcall(self.inner, args) };
         handle_error!(ret, self);
         Ok(self)
     }
 
-    pub fn call_method(&self, args: i32) -> Result<&Self> {
+    pub fn call_method(&self, args: i32) -> DukResult<&Self> {
         let ret = unsafe { duk::duk_pcall_method(self.inner, args) };
         handle_error!(ret, self);
         Ok(self)
     }
 
-    pub fn call_prop(&self, idx: Idx, args: i32) -> Result<&Self> {
+    pub fn call_prop(&self, idx: Idx, args: i32) -> DukResult<&Self> {
         let ret = unsafe { duk::duk_pcall_prop(self.inner, idx, args) };
         handle_error!(ret, self);
         Ok(self)
     }
 
-    pub fn construct(&self, args: i32) -> Result<&Self> {
+    pub fn construct(&self, args: i32) -> DukResult<&Self> {
         let ret = unsafe { duk::duk_pnew(self.inner, args) };
         handle_error!(ret, self);
         Ok(self)
@@ -657,40 +655,14 @@ impl Context {
         }
     }
 
-    // Class
-    pub fn push_class(&self, builder: Builder) -> Result<&Self> {
-        let ret = unsafe { push_class_builder(self, builder) };
-        match ret {
-            Ok(_) => Ok(self),
-            Err(e) => Err(e),
-        }
-    }
+    // Enumeration
 
-    pub fn create<'a, T: Constructable<'a>>(&'a self) -> Result<T> {
-        T::construct(self)
-    }
-
-    pub fn push<T: ToDuktape>(&self, value: T) -> Result<&Self> {
-        value.to_context(self)?;
-        Ok(self)
-    }
-
-    pub fn get<'de, T: FromDuktape<'de>>(&'de self, index: Idx) -> Result<T> {
-        T::from_context(self, index)
-    }
-
-    pub fn getp<'de, T: FromDuktape<'de>>(&'de self) -> Result<T> {
-        let ret = T::from_context(self, -1);
-        self.pop(1);
-        ret
-    }
-
-    pub fn enumerator(&self, index: Idx, flags: Enumerate) -> Result<()> {
+    pub fn enumerator(&self, index: Idx, flags: Enumerate) -> DukResult<()> {
         unsafe { duk::duk_enum(self.inner, index, flags.bits()) };
         Ok(())
     }
 
-    pub fn next(&self, enum_idx: Idx, value: bool) -> Result<bool> {
+    pub fn next(&self, enum_idx: Idx, value: bool) -> DukResult<bool> {
         let out = unsafe {
             match duk::duk_next(self.inner, enum_idx, if value { 1 } else { 0 }) {
                 1 => true,

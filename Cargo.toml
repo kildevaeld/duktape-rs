@@ -3,8 +3,9 @@
 members = [
     "duktape_sys",
     "duktape",
-    "duktape_modules",
-    "duktape_stdlib",
-    "duktape_es2015",
-    "duk"
+    "duktape2",
+    #"duktape_modules",
+    #"duktape_stdlib",
+    #"duktape_es2015",
+    #"duk"
 ]

@@ -99,9 +99,9 @@ where
     }
 }
 pub const DUK_VERSION: u32 = 20300;
-pub const DUK_GIT_COMMIT: &'static [u8; 41usize] = b"d7fdb67f18561a50e06bafd196c6b423af9ad6fe\0";
-pub const DUK_GIT_DESCRIBE: &'static [u8; 7usize] = b"v2.3.0\0";
-pub const DUK_GIT_BRANCH: &'static [u8; 7usize] = b"master\0";
+pub const DUK_GIT_COMMIT: &'static [u8; 41usize] = b"661e36f7c333fba8aec9042dcc84915438a7c015\0";
+pub const DUK_GIT_DESCRIBE: &'static [u8; 14usize] = b"661e36f-dirty\0";
+pub const DUK_GIT_BRANCH: &'static [u8; 3usize] = b"v2\0";
 pub const TARGET_OS_MAC: u32 = 1;
 pub const TARGET_OS_WIN32: u32 = 0;
 pub const TARGET_OS_UNIX: u32 = 0;
