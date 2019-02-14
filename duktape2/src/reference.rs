@@ -18,41 +18,6 @@ impl<'a> Reference<'a> {
         let refer = unsafe { make_ref(ctx.inner) };
         Reference { ctx, _ref: refer }
     }
-
-    // pub fn ctx(&self) -> &'a Context {
-    //     self.ctx
-    // }
-
-    // pub fn get_type(&self) -> Type {
-    //     unsafe { push_ref(self.ctx.inner, self.refer) };
-    //     let ret = self.ctx.get_type(-1);
-    //     self.ctx.pop(1);
-    //     ret
-    // }
-
-    // pub fn is(&self, t: Type) -> bool {
-    //     self.get_type() == t
-    // }
-
-    // pub fn get<T: FromDuktape<'a>>(&self) -> Result<T> {
-    //     self.push();
-    //     let ret = T::from_context(self.ctx, -1);
-    //     self.ctx.pop(1);
-    //     ret
-    // }
-
-    // pub fn push(&self) -> &Self {
-    //     unsafe { push_ref(self.ctx.inner, self._ref) };
-    //     self
-    // }
-
-    // pub fn instance_of(&self, reference: &Reference) -> bool {
-    //     self.push();
-    //     reference.push();
-    //     let ret = self.ctx.instance_of(-2, -1);
-    //     self.ctx.pop(2);
-    //     ret
-    // }
 }
 
 impl<'a> Drop for Reference<'a> {
