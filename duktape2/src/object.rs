@@ -7,6 +7,7 @@ use super::function::Function;
 use super::property::{Property, PropertyBuilder};
 use super::reference::{JSValue, Reference};
 use super::to_context::*;
+use std::fmt;
 
 pub trait JSObject<'a>: JSValue<'a> {
     fn get<T: AsRef<[u8]>, V: FromDuktape<'a>>(&self, prop: T) -> DukResult<V> {
@@ -126,6 +127,20 @@ impl<'a> Object<'a> {
     }
 }
 
+impl<'a> fmt::Display for Object<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.ctx().get_global_string("JSON");
+        let j: Object = Object::from_context(self.ctx(), -1).unwrap();
+        self.ctx().pop(1);
+        let clone = self.clone();
+        let json = j
+            .prop("stringify")
+            .call::<_, &str>((clone, (), "  "))
+            .unwrap();
+        write!(f, "{}", json)
+    }
+}
+
 impl<'a> JSValue<'a> for Object<'a> {
     fn push(&self) -> &Self {
         self._ref.push();
@@ -140,18 +155,18 @@ impl<'a> JSValue<'a> for Object<'a> {
 impl<'a> JSObject<'a> for Object<'a> {}
 
 impl<'a> ToDuktape for Object<'a> {
-    fn to_context(self, _ctx: &Context) -> DukResult<()> {
+    fn to_context(&self, _ctx: &Context) -> DukResult<()> {
         self.push();
         Ok(())
     }
 }
 
-impl<'a> ToDuktape for &'a Object<'a> {
-    fn to_context(self, _ctx: &Context) -> DukResult<()> {
-        self.push();
-        Ok(())
-    }
-}
+// impl<'a> ToDuktape for &'a Object<'a> {
+//     fn to_context(self, _ctx: &Context) -> DukResult<()> {
+//         self.push();
+//         Ok(())
+//     }
+// }
 
 impl<'a> FromDuktape<'a> for Object<'a> {
     fn from_context(ctx: &'a Context, index: Idx) -> DukResult<Self> {

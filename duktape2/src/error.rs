@@ -49,7 +49,15 @@ impl DukError {
 
 impl fmt::Display for DukError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "err")
+        write!(f, "{:?}Error", self.code)?;
+
+        if let Some(m) = &self.inner {
+            write!(f, ": {}", m)?;
+        } else if let Some(m) = &self.msg {
+            write!(f, ": {}", m)?;
+        }
+
+        Ok(())
     }
 }
 

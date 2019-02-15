@@ -7,7 +7,7 @@ mod macros;
 mod argument_list;
 mod array;
 mod callable;
-mod commonjs;
+pub mod commonjs;
 mod context;
 mod error;
 mod from_context;

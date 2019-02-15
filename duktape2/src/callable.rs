@@ -1,6 +1,5 @@
 use super::context::{CallRet, Context, DUK_VARARGS};
 use super::error::DukResult;
-use super::to_context::ToDuktape;
 use duktape_sys::*;
 use std::ffi::{c_void, CString};
 
