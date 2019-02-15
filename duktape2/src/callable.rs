@@ -84,20 +84,30 @@ impl<T: Fn(&Context) -> DukResult<CallRet>> Callable for T {
     }
 }
 
+impl Callable for Box<dyn Callable> {
+    fn argc(&self) -> i32 {
+        self.as_ref().argc()
+    }
+
+    fn call(&self, ctx: &Context) -> DukResult<CallRet> {
+        self.as_ref().call(ctx)
+    }
+}
+
 // impl<T: Callable> ToDuktape for T {}
 
-impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for T {
-    fn to_context(self, ctx: &Context) -> DukResult<()> {
-        let boxed: Box<dyn Callable> = Box::new(self);
-        unsafe { push_callable(ctx, boxed) };
-        Ok(())
-    }
-}
+// impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for T {
+//     fn to_context(self, ctx: &Context) -> DukResult<()> {
+//         let boxed: Box<dyn Callable> = Box::new(self);
+//         unsafe { push_callable(ctx, boxed) };
+//         Ok(())
+//     }
+// }
 
-impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for (i32, T) {
-    fn to_context(self, ctx: &Context) -> DukResult<()> {
-        let boxed: Box<dyn Callable> = Box::new(self);
-        unsafe { push_callable(ctx, boxed) };
-        Ok(())
-    }
-}
+// impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for (i32, T) {
+//     fn to_context(self, ctx: &Context) -> DukResult<()> {
+//         let boxed: Box<dyn Callable> = Box::new(self);
+//         unsafe { push_callable(ctx, boxed) };
+//         Ok(())
+//     }
+// }

@@ -1,8 +1,10 @@
 use super::argument_list::ArgumentList;
 use super::array::Array;
-use super::context::{Context, Idx};
+use super::context::{Constructable, Context, Idx, Type};
 use super::error::DukResult;
 use super::from_context::*;
+use super::function::Function;
+use super::property::{Property, PropertyBuilder};
 use super::reference::{JSValue, Reference};
 use super::to_context::*;
 
@@ -38,65 +40,82 @@ pub trait JSObject<'a>: JSValue<'a> {
         self
     }
 
-    fn call<T: AsRef<str>, A: ArgumentList, R: FromDuktape<'a>>(
-        &self,
-        fn_name: T,
-        args: A,
-    ) -> DukResult<R> {
+    fn prop(&self, prop: &'a str) -> Property<'a> {
         self.push();
-        let idx = self.ctx().normalize_index(-1);
-        self.ctx().push_string(fn_name.as_ref());
-        let len = args.len();
-        args.push_args(self.ctx())?;
-        if let Err(e) = self.ctx().call_prop(idx, len) {
-            self.ctx().pop(1);
-            return Err(e);
-        }
-        self.ctx().remove(-2);
-        let ret = R::from_context(self.ctx(), -1);
+        let r = Reference::new(self.ctx(), -1);
         self.ctx().pop(1);
-        ret
+        return Property {
+            _ref: r,
+            prop: prop,
+        };
     }
 
-    /// Construct a property on the object
-    fn construct<T: AsRef<str>, A: ArgumentList>(
-        &self,
-        fn_name: T,
-        args: A,
-    ) -> DukResult<Object<'a>> {
-        self.push();
-        if !self.ctx().has_prop_string(-1, fn_name.as_ref()) {
-            duk_type_error!("not a function");
-        }
+    // fn call<T: AsRef<str>, A: ArgumentList, R: FromDuktape<'a>>(
+    //     &self,
+    //     fn_name: T,
+    //     args: A,
+    // ) -> DukResult<R> {
+    //     self.push();
+    //     let idx = self.ctx().normalize_index(-1);
+    //     self.ctx().push_string(fn_name.as_ref());
+    //     let len = args.len();
+    //     args.push_args(self.ctx())?;
+    //     if let Err(e) = self.ctx().call_prop(idx, len) {
+    //         self.ctx().pop(1);
+    //         return Err(e);
+    //     }
+    //     self.ctx().remove(-2);
+    //     let ret = R::from_context(self.ctx(), -1);
+    //     self.ctx().pop(1);
+    //     ret
+    // }
 
-        let len = args.len();
+    // /// Construct a property on the object
+    // fn construct<T: AsRef<str>, A: ArgumentList>(
+    //     &self,
+    //     fn_name: T,
+    //     args: A,
+    // ) -> DukResult<Object<'a>> {
+    //     self.push();
+    //     if !self.ctx().has_prop_string(-1, fn_name.as_ref()) {
+    //         duk_type_error!("not a function");
+    //     }
 
-        self.ctx().get_prop_string(-1, fn_name.as_ref());
-        args.push_args(self.ctx())?;
-        if let Err(e) = self.ctx().construct(len) {
-            self.ctx().pop(2);
-            return Err(e);
-        }
+    //     let len = args.len();
 
-        self.ctx().remove(-2);
-        let o = Object::from_context(self.ctx(), -1);
-        self.ctx().pop(1);
-        o
-    }
+    //     self.ctx().get_prop_string(-1, fn_name.as_ref());
+    //     args.push_args(self.ctx())?;
+    //     if let Err(e) = self.ctx().construct(len) {
+    //         self.ctx().pop(2);
+    //         return Err(e);
+    //     }
+
+    //     self.ctx().remove(-2);
+    //     let o = Object::from_context(self.ctx(), -1);
+    //     self.ctx().pop(1);
+    //     o
+    // }
 
     /// Return keys
     fn keys(&'a self) -> Array<'a> {
-        let o = self
-            .ctx()
+        self.ctx()
             .get_global_string("Object")
             .getp::<Object>()
-            .unwrap();
-
-        o.call::<_, _, Array>("keys", self.to::<Reference>().unwrap())
             .unwrap()
+            .prop("keys")
+            .call::<_, Array>(self.to::<Reference>().unwrap())
+            .unwrap()
+    }
+
+    fn define_property(&self, definition: PropertyBuilder) -> DukResult<()> {
+        self.push();
+        duk_ok_or_pop!(definition.build(self.ctx(), -1), self.ctx(), 1);
+        self.ctx().pop(1);
+        Ok(())
     }
 }
 
+#[derive(Clone)]
 pub struct Object<'a> {
     _ref: Reference<'a>,
 }
@@ -141,6 +160,21 @@ impl<'a> FromDuktape<'a> for Object<'a> {
     }
 }
 
+impl<'a> Constructable<'a> for Object<'a> {
+    fn construct(duk: &'a Context) -> DukResult<Self> {
+        duk.push_object();
+        let o = match Object::from_context(duk, -1) {
+            Ok(o) => o,
+            Err(e) => {
+                duk.pop(1);
+                return Err(e);
+            }
+        };
+        duk.pop(1);
+        Ok(o)
+    }
+}
+
 impl<'a> ArgumentList for Object<'a> {
     fn len(&self) -> i32 {
         1
@@ -148,5 +182,35 @@ impl<'a> ArgumentList for Object<'a> {
 
     fn push_args(self, ctx: &Context) -> DukResult<()> {
         self.to_context(ctx)
+    }
+}
+
+impl<'a> From<Function<'a>> for Object<'a> {
+    fn from(func: Function<'a>) -> Self {
+        Object::new(func._ref.clone())
+    }
+}
+
+impl<'a> From<Object<'a>> for DukResult<Function<'a>> {
+    fn from(func: Object<'a>) -> Self {
+        if func.is(Type::Function) {
+            return Ok(Function::new(func._ref.clone()));
+        }
+        duk_type_error!("could not interpret object as function")
+    }
+}
+
+impl<'a> From<Array<'a>> for Object<'a> {
+    fn from(array: Array<'a>) -> Self {
+        Object::new(array._ref.clone())
+    }
+}
+
+impl<'a> From<Object<'a>> for DukResult<Array<'a>> {
+    fn from(obj: Object<'a>) -> Self {
+        if obj.is(Type::Array) {
+            return Ok(Array::new(obj._ref.clone()));
+        }
+        duk_type_error!("could not interpret object as array");
     }
 }

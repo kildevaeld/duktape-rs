@@ -33,8 +33,9 @@ pub trait JSFunction<'a>: JSObject<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct Function<'a> {
-    _ref: Reference<'a>,
+    pub(crate) _ref: Reference<'a>,
 }
 
 impl<'a> Function<'a> {
@@ -64,12 +65,12 @@ impl<'a> ToDuktape for Function<'a> {
     }
 }
 
-impl<'a> ToDuktape for &'a Function<'a> {
-    fn to_context(self, _ctx: &Context) -> DukResult<()> {
-        self.push();
-        Ok(())
-    }
-}
+// impl<'a> ToDuktape for &'a Function<'a> {
+//     fn to_context(self, _ctx: &Context) -> DukResult<()> {
+//         self.push();
+//         Ok(())
+//     }
+// }
 
 impl<'a> FromDuktape<'a> for Function<'a> {
     fn from_context(ctx: &'a Context, index: Idx) -> DukResult<Self> {
@@ -85,11 +86,5 @@ impl<'a> ArgumentList for Function<'a> {
 
     fn push_args(self, ctx: &Context) -> DukResult<()> {
         self.to_context(ctx)
-    }
-}
-
-impl<'a> Clone for Function<'a> {
-    fn clone(&self) -> Self {
-        Function::new(self._ref.clone())
     }
 }

@@ -18,6 +18,15 @@ impl ToDuktapeContext for Context {
     }
 }
 
+impl<'a, T> ToDuktape for &'a T
+where
+    T: ToDuktape,
+{
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
+        (*self).to_context(ctx)
+    }
+}
+
 macro_rules! impl_for_ser {
     ($T:ty, $U:ty, $func:ident) => {
         impl ToDuktape for $T {
@@ -82,12 +91,12 @@ impl<'a> ToDuktape for &'a str {
     }
 }
 
-impl<'a> ToDuktape for &'a &'a str {
-    fn to_context(self, ctx: &Context) -> DukResult<()> {
-        ctx.push_string(self);
-        Ok(())
-    }
-}
+// impl<'a> ToDuktape for &'a &'a str {
+//     fn to_context(self, ctx: &Context) -> DukResult<()> {
+//         ctx.push_string(self);
+//         Ok(())
+//     }
+// }
 
 impl<'a> ToDuktape for &'a String {
     fn to_context(self, ctx: &Context) -> DukResult<()> {

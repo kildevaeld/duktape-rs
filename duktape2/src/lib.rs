@@ -7,11 +7,13 @@ mod macros;
 mod argument_list;
 mod array;
 mod callable;
+mod commonjs;
 mod context;
 mod error;
 mod from_context;
 mod function;
 mod object;
+mod property;
 mod reference;
 mod to_context;
 
@@ -26,6 +28,7 @@ pub mod types {
 
 pub mod prelude {
     pub use super::callable::*;
+    pub use super::commonjs::*;
     pub use super::context::*;
     pub use super::error::*;
     pub use super::from_context::*;

@@ -1,7 +1,7 @@
 // use super::argument_list::ArgumentList;
 use super::context::Context;
 use super::error::DukResult;
-use super::prelude::{FromDuktape, FromDuktapeContext, ToDuktape, ToDuktapeContext};
+use super::prelude::{Constructable, FromDuktape, FromDuktapeContext, ToDuktape, ToDuktapeContext};
 use super::reference::{JSValue, Reference};
 // use std::iter;
 
@@ -31,8 +31,9 @@ pub trait JSArray<'a>: JSValue<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct Array<'a> {
-    pub _ref: Reference<'a>,
+    pub(crate) _ref: Reference<'a>,
 }
 
 impl<'a> Array<'a> {
@@ -53,6 +54,21 @@ impl<'a> JSValue<'a> for Array<'a> {
 }
 
 impl<'a> JSArray<'a> for Array<'a> {}
+
+impl<'a> Constructable<'a> for Array<'a> {
+    fn construct(duk: &'a Context) -> DukResult<Self> {
+        duk.push_array();
+        let o = match Array::from_context(duk, -1) {
+            Ok(o) => o,
+            Err(e) => {
+                duk.pop(1);
+                return Err(e);
+            }
+        };
+        duk.pop(1);
+        Ok(o)
+    }
+}
 
 impl<'a> ToDuktape for Array<'a> {
     fn to_context(self, _ctx: &Context) -> DukResult<()> {

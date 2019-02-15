@@ -2,7 +2,6 @@ use super::argument_list::ArgumentList;
 use super::context::{Context, Idx, Type};
 use super::error::DukResult;
 use super::from_context::*;
-use super::privates::{make_ref, push_ref, unref};
 use super::to_context::*;
 
 type RefId = u32;
@@ -14,15 +13,14 @@ pub struct Reference<'a> {
 
 impl<'a> Reference<'a> {
     pub(crate) fn new(ctx: &'a Context, idx: Idx) -> Reference<'a> {
-        ctx.dup(idx);
-        let refer = unsafe { make_ref(ctx.inner) };
+        let refer = ctx.make_ref(idx);
         Reference { ctx, _ref: refer }
     }
 }
 
 impl<'a> Drop for Reference<'a> {
     fn drop(&mut self) {
-        unsafe { unref(self.ctx.inner, self._ref) };
+        self.ctx().remove_ref(self._ref);
     }
 }
 
@@ -50,7 +48,7 @@ impl<'a> FromDuktape<'a> for Reference<'a> {
 
 impl<'a> JSValue<'a> for Reference<'a> {
     fn push(&self) -> &Self {
-        unsafe { push_ref(self.ctx.inner, self._ref) };
+        self.ctx.push_ref(&self._ref);
         self
     }
 
@@ -69,7 +67,7 @@ impl<'a> ArgumentList for Reference<'a> {
     }
 }
 
-pub trait JSValue<'a>: Sized {
+pub trait JSValue<'a>: Sized + Clone {
     fn push(&self) -> &Self;
     fn ctx(&self) -> &'a Context;
 

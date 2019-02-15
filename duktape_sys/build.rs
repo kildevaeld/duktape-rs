@@ -68,12 +68,16 @@ mod bindings {
 
         use std::process;
         let o = process::Command::new("python2")
-        .args(&["tools/configure.py", "--output-directory", output_dir.to_str().unwrap(), "-DDUK_USE_SYMBOL_BUILTIN"])
+        .args(&["tools/configure.py", "--output-directory", output_dir.to_str().unwrap(), 
+            "-DDUK_USE_SYMBOL_BUILTIN",
+            "-UDUK_USE_FILE_IO",
+            "--dll",
+            "-DDUK_USE_FASTINT"
+            ])
         .current_dir("duktape-2.3.0")
         .output().expect("Unable to configure duktape build scripts");
 
         assert!(o.status.success());
-
 
         let bindings = bindgen::Builder::default()
         // The input header we would like to generate

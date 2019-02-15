@@ -1,6 +1,6 @@
 use super::callable::{push_callable, Callable};
 use super::class::{push_class_builder, Builder};
-use super::error::{ErrorKind, Result, DukError, DukErrorKind};
+use super::error::{DukError, DukErrorKind, ErrorKind, Result};
 use super::privates;
 use super::types::{FromDuktape, ToDuktape, Type};
 use duktape_sys::{self as duk, duk_context};
@@ -46,16 +46,18 @@ bitflags! {
     }
 }
 
+
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum ErrorCode {
-    None,                          /* no error (e.g. from duk_get_error_code()) */
-    Error,                         /* Error */
-    Eval,                    /* EvalError */
-    Range,                   /* RangeError */
-    Reference,               /* ReferenceError */
-    Syntax,                  /* SyntaxError */
-    Type,                   /* TypeError */
-    Uri, 
+    None,      /* no error (e.g. from duk_get_error_code()) */
+    Error,     /* Error */
+    Eval,      /* EvalError */
+    Range,     /* RangeError */
+    Reference, /* ReferenceError */
+    Syntax,    /* SyntaxError */
+    Type,      /* TypeError */
+    Uri,
 }
 
 pub struct Context {
@@ -294,25 +296,23 @@ impl Context {
     push_impl!(push_global_stash, duk_push_global_stash);
     push_impl!(push_this, duk_push_this);
     push_impl!(push_current_function, duk_push_current_function);
-    
+
     pub fn get_error_code(&self, idx: Idx) -> ErrorCode {
-        let code = unsafe {
-            duk::duk_get_error_code(self.inner, idx) as u32
-        };
+        let code = unsafe { duk::duk_get_error_code(self.inner, idx) as u32 };
         match code {
             duk::DUK_ERR_NONE => ErrorCode::None,
-            duk::DUK_ERR_ERROR => ErrorCode::Error, 
+            duk::DUK_ERR_ERROR => ErrorCode::Error,
             duk::DUK_ERR_EVAL_ERROR => ErrorCode::Eval,
             duk::DUK_ERR_RANGE_ERROR => ErrorCode::Range,
             duk::DUK_ERR_REFERENCE_ERROR => ErrorCode::Reference,
             duk::DUK_ERR_SYNTAX_ERROR => ErrorCode::Syntax,
-            duk::DUK_ERR_TYPE_ERROR =>  ErrorCode::Type,
+            duk::DUK_ERR_TYPE_ERROR => ErrorCode::Type,
             duk::DUK_ERR_URI_ERROR => ErrorCode::Uri,
             _ => unreachable!("should not happen"),
         }
     }
 
-    pub fn get_error<'a>(&'a self, idx:Idx) -> Result<DukError<'a>> {
+    pub fn get_error<'a>(&'a self, idx: Idx) -> Result<DukError<'a>> {
         let ty = self.get_error_code(idx);
         if ty == ErrorCode::None {
             bail!(ErrorKind::TypeError(format!("error")));
@@ -330,7 +330,7 @@ impl Context {
         } else {
             msg = "Uknown";
         }
-        
+
         self.pop(1);
 
         let kind = match ty {
@@ -407,8 +407,6 @@ impl Context {
 
         Ok(r)
     }
-
-
 
     pub fn get_global_string<T: AsRef<[u8]>>(&self, name: T) -> &Self {
         unsafe {

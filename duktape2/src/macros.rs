@@ -27,3 +27,16 @@ macro_rules! duk_reference_error {
         ));
     };
 }
+
+#[macro_export]
+macro_rules! duk_ok_or_pop {
+    ($dims:expr, $ctx: expr, $popc: expr) => {{
+        match $dims {
+            Ok(m) => m,
+            Err(e) => {
+                $ctx.pop($popc);
+                return Err(e);
+            }
+        }
+    }};
+}

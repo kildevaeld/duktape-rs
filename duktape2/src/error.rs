@@ -6,17 +6,6 @@ use std::str;
 
 pub type DukResult<T> = Result<T, DukError>;
 
-// pub enum DukErrorKind<'a> {
-//     InsufficientMemory,
-//     Type(&'a str),
-//     Reference(&'a str),
-//     Eval(&'a str),
-//     Syntax(&'a str),
-//     Uri(&'a str),
-//     Error(&'a str),
-//     Range(&'a str),
-// }
-
 #[derive(PartialEq, Debug, Clone)]
 pub enum DukErrorCode {
     None,      /* no error (e.g. from duk_get_error_code()) */
@@ -99,8 +88,25 @@ impl fmt::Display for InsufficientMemory {
 
 impl Error for InsufficientMemory {}
 
+#[derive(Debug, PartialEq)]
+pub struct InvalidIndex;
+
+impl fmt::Display for InvalidIndex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "InvalidIndex")
+    }
+}
+
+impl Error for InvalidIndex {}
+
 impl From<InsufficientMemory> for DukError {
     fn from(error: InsufficientMemory) -> DukError {
+        DukError::with(error)
+    }
+}
+
+impl From<InvalidIndex> for DukError {
+    fn from(error: InvalidIndex) -> DukError {
         DukError::with(error)
     }
 }

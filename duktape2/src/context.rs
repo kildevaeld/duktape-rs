@@ -1,11 +1,13 @@
 use super::callable::{push_callable, Callable};
-use super::error::{DukError, DukErrorCode, DukResult, InsufficientMemory};
+use super::error::{DukError, DukErrorCode, DukResult, InsufficientMemory, InvalidIndex};
 use super::privates;
 use duktape_sys::{self as duk, duk_context};
 use std::ffi::CStr;
 use std::fmt;
 use std::ptr;
 use typemap::TypeMap;
+
+pub type RefId = u32;
 
 #[derive(PartialEq, Debug)]
 pub enum Type {
@@ -22,11 +24,12 @@ pub enum Type {
 
 pub type Idx = i32;
 pub type CallRet = i32;
-pub use duk::DUK_VARARGS;
 
-// pub trait Constructable<'ctor>: Sized {
-//     fn construct(duk: &'ctor Context) -> Result<Self>;
-// }
+pub trait Constructable<'ctor>: Sized {
+    fn construct(duk: &'ctor Context) -> DukResult<Self>;
+}
+
+pub use duk::DUK_VARARGS;
 
 bitflags! {
     pub struct Compile: u32 {
@@ -59,17 +62,46 @@ bitflags! {
     }
 }
 
-#[derive(PartialEq, Debug, Clone)]
-pub enum ErrorCode {
-    None,      /* no error (e.g. from duk_get_error_code()) */
-    Error,     /* Error */
-    Eval,      /* EvalError */
-    Range,     /* RangeError */
-    Reference, /* ReferenceError */
-    Syntax,    /* SyntaxError */
-    Type,      /* TypeError */
-    Uri,
+bitflags! {
+    pub struct PropertyFlag: u32 {
+        const DUK_DEFPROP_WRITABLE = 1;
+        const DUK_DEFPROP_ENUMERABLE = 2;
+        const DUK_DEFPROP_CONFIGURABLE = 4;
+        const DUK_DEFPROP_HAVE_WRITABLE = 8;
+        const DUK_DEFPROP_HAVE_ENUMERABLE = 16;
+        const DUK_DEFPROP_HAVE_CONFIGURABLE = 32;
+        const DUK_DEFPROP_HAVE_VALUE = 64;
+        const DUK_DEFPROP_HAVE_GETTER = 128;
+        const DUK_DEFPROP_HAVE_SETTER = 256;
+        const DUK_DEFPROP_FORCE = 512;
+        const DUK_DEFPROP_SET_WRITABLE = 9;
+        const DUK_DEFPROP_CLEAR_WRITABLE = 8;
+        const DUK_DEFPROP_SET_ENUMERABLE = 18;
+        const DUK_DEFPROP_CLEAR_ENUMERABLE = 16;
+        const DUK_DEFPROP_SET_CONFIGURABLE = 36;
+        const DUK_DEFPROP_CLEAR_CONFIGURABLE = 32;
+    }
 }
+
+impl Default for PropertyFlag {
+    fn default() -> PropertyFlag {
+        PropertyFlag::DUK_DEFPROP_SET_CONFIGURABLE
+            | PropertyFlag::DUK_DEFPROP_SET_ENUMERABLE
+            | PropertyFlag::DUK_DEFPROP_SET_CONFIGURABLE
+    }
+}
+
+// #[derive(PartialEq, Debug, Clone)]
+// pub enum ErrorCode {
+//     None,      /* no error (e.g. from duk_get_error_code()) */
+//     Error,     /* Error */
+//     Eval,      /* EvalError */
+//     Range,     /* RangeError */
+//     Reference, /* ReferenceError */
+//     Syntax,    /* SyntaxError */
+//     Type,      /* TypeError */
+//     Uri,
+// }
 
 pub struct Context {
     pub(crate) inner: *mut duk_context,
@@ -129,6 +161,14 @@ macro_rules! push_impl {
                 duk::$func(self.inner)
             };
             self
+        }
+    };
+}
+
+macro_rules! check_index {
+    ($ctx: expr, $idx: expr) => {
+        if !$ctx.is_valid_index($idx) {
+            return Err(InvalidIndex.into());
         }
     };
 }
@@ -419,9 +459,10 @@ impl Context {
         self
     }
 
-    pub fn dup(&self, idx: Idx) -> &Self {
+    pub fn dup(&self, idx: Idx) -> DukResult<&Self> {
+        check_index!(self, idx);
         unsafe { duk::duk_dup(self.inner, idx) };
-        self
+        Ok(self)
     }
 
     pub fn pop(&self, mut index: Idx) -> &Self {
@@ -545,6 +586,21 @@ impl Context {
                 false
             }
         }
+    }
+
+    pub fn def_prop(&self, idx: Idx, flags: PropertyFlag) -> DukResult<&Self> {
+        unsafe {
+            duk::duk_def_prop(self.inner, idx, flags.bits());
+        }
+
+        Ok(self)
+    }
+
+    pub fn get_prop_desc(&self, idx: Idx) -> DukResult<&Self> {
+        unsafe {
+            duk::duk_get_prop_desc(self.inner, idx, 0);
+        }
+        Ok(self)
     }
 
     /// Checks
@@ -671,6 +727,28 @@ impl Context {
         };
         Ok(out)
     }
+
+    // Refes
+    pub fn make_ref(&self, idx: Idx) -> RefId {
+        self.dup(idx);
+        unsafe { privates::make_ref(self.inner) }
+    }
+
+    pub fn push_ref(&self, ref_id: &RefId) -> &Self {
+        unsafe { privates::push_ref(self.inner, *ref_id) };
+        self
+    }
+
+    pub fn remove_ref(&self, ref_id: RefId) -> &Self {
+        unsafe { privates::unref(self.inner, ref_id) };
+        self
+    }
+
+    // Misc
+
+    pub fn create<'a, T: Constructable<'a>>(&'a self) -> DukResult<T> {
+        T::construct(self)
+    }
 }
 
 impl Drop for Context {
@@ -689,10 +767,6 @@ impl Drop for Context {
 impl fmt::Debug for Context {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.dump())?;
-        // unsafe { privates::get_refs(self.inner) };
-
-        // write!(f, "refs: {}", self.dump())?;
-        // self.pop(1);
         Ok(())
     }
 }
@@ -712,6 +786,35 @@ pub mod tests {
     fn context_new() {
         let duk = Context::new();
         assert!(duk.is_ok());
+    }
+
+    #[test]
+    fn context_pop() {
+        let duk = Context::new().unwrap();
+        duk.pop(10);
+    }
+
+    #[test]
+    fn context_eval() {
+        let duk = Context::new().unwrap();
+        let ret = duk.eval("2 + 2");
+        assert!(ret.is_ok());
+    }
+
+    #[test]
+    fn context_string() {
+        let duk = Context::new().unwrap();
+        let ret = duk.eval("('Hello, World')");
+        assert!(ret.is_ok());
+        assert_eq!("Hello, World", duk.get_string(-1).unwrap());
+        duk.pop(1);
+        //duk.get_string(-1).unwrap();
+    }
+
+    #[test]
+    fn context_dup() {
+        let duk = Context::new().unwrap();
+        duk.dup(-2);
     }
 
     #[test]
