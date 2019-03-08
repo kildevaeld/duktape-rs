@@ -9,5 +9,5 @@ fn main() {
         .resolver("file", file_resolver(PhysicalFS::new("/").unwrap()))
         .build(&ctx);
 
-    ctx.eval("require('./hello')").unwrap();
+    ctx.eval("require('./test')").unwrap();
 }

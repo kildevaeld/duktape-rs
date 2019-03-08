@@ -1,7 +1,9 @@
-var fs = require('fs');
+// var fs = require('fs');
 
-var file = new fs.File('duk_history.txt');
+// var file = new fs.File('duk_history.txt');
 
-var buffer = file.readAll();
+// var buffer = file.readAll();
 
-require('io').stdout.write(new TextDecoder('utf8').decode(buffer));
+// require('io').stdout.write(new TextDecoder('utf8').decode(buffer));
+
+module.exports = 'Hello, World';
