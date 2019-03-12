@@ -1,14 +1,12 @@
-use super::super::error::{DukError, DukResult};
-use super::utils;
+use super::super::error::DukResult;
 use super::ModuleResolver;
 use pathutils::set_extname;
-use std::fs;
 use std::io::Read;
-use std::path::{self, PathBuf};
 use vfs::{ReadPath, VMetadata, VPath, VFS};
 
 pub struct FileResolver<T: VFS> {
     vfs: T,
+    cwd: String,
 }
 
 macro_rules! to_string {
@@ -38,19 +36,12 @@ where
     }
 
     fn resolve(&self, id: &str, parent: &str, extensions: &[String]) -> DukResult<String> {
-        // let parent = path::Path::new(parent);
-        // let mut id = PathBuf::from(id);
-
-        // if !id.is_absolute() {
-        //     let parent_dir = parent.parent();
-        //     if parent_dir.is_none() {
-        //         resolve_err!(id);
-        //     }
-
-        //     id = utils::join(parent_dir.unwrap(), id.to_str().unwrap())?;
-        // }
         let mut id = if id.chars().nth(0).unwrap() != '/' {
-            let parent = self.vfs.path(parent);
+            let parent = if parent.is_empty() {
+                self.vfs.path(&self.cwd)
+            } else {
+                self.vfs.path(parent)
+            };
             parent.resolve(id)
         } else {
             self.vfs.path(id)
@@ -61,7 +52,7 @@ where
             for ext in extensions {
                 let mut path = id.clone();
                 path = self.vfs.path(&set_extname(path.to_string().as_ref(), ext));
-                //path.set_extension(ext);
+
                 if path.exists() {
                     id = path;
                     found = true;
@@ -78,7 +69,6 @@ where
             let mut found = false;
             for ext in extensions {
                 let mut path = nid.clone();
-                //path.set_extension(ext);
                 path = self.vfs.path(&set_extname(path.to_string().as_ref(), ext));
                 if path.exists() {
                     id = path;
@@ -95,9 +85,15 @@ where
     }
 }
 
-pub fn file_resolver<T: VFS + 'static>(vfs: T) -> Box<dyn ModuleResolver>
+pub fn file_resolver<T: VFS + 'static, S: AsRef<str>>(
+    vfs: T,
+    work_path: S,
+) -> Box<dyn ModuleResolver>
 where
     <T as VFS>::Path: ReadPath,
 {
-    return Box::new(FileResolver { vfs });
+    return Box::new(FileResolver {
+        vfs,
+        cwd: work_path.as_ref().to_string(),
+    });
 }

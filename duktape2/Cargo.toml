@@ -8,10 +8,14 @@ edition = "2018"
 duktape_sys = { path = "../duktape_sys" }
 typemap = "^0.3"
 bitflags = "^1.0.4"
-vfs = { git = "https://github.com/kildevaeld/vfs-rs.git", optional = false }
-pathutils = { git = "https://github.com/kildevaeld/pathutils-rs.git", optional = false }
+vfs = { git = "https://github.com/kildevaeld/vfs-rs.git", optional = true }
+pathutils = { git = "https://github.com/kildevaeld/pathutils-rs.git", optional = true }
 
+[features]
+default = []
+commonjs = ["vfs", "pathutils"]
 
 [[example]]
 name = "module"
 path = "example/module.rs"
+required-features = ["commonjs"]

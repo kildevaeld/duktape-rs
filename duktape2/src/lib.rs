@@ -7,6 +7,7 @@ mod macros;
 mod argument_list;
 mod array;
 mod callable;
+#[cfg(feature = "commonjs")]
 pub mod commonjs;
 mod context;
 mod error;
@@ -28,6 +29,7 @@ pub mod types {
 
 pub mod prelude {
     pub use super::callable::*;
+    #[cfg(feature = "commonjs")]
     pub use super::commonjs::*;
     pub use super::context::*;
     pub use super::error::*;

@@ -31,7 +31,6 @@ pub(crate) fn build_require<'a>(ctx: &'a Context, module_id: &str) -> DukResult<
         .getp()?;
 
     let function = requirejs.call::<_, Function>(function);
-    // let function: DukResult<Function> = function.into();
 
     match function {
         Ok(mut ret) => {
