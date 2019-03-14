@@ -22,7 +22,10 @@ impl ModuleLoader for JsonLoader {
     fn load(&self, module: &Object, buffer: &[u8]) -> DukResult<()> {
         let o = module.ctx().get_global_string("JSON").getp::<Object>()?;
         let json = str::from_utf8(buffer)?;
-        o.prop("parse").call::<_, Reference>(json)?.push();
+
+        let r = o.prop("parse").call::<_, Reference>(json)?;
+        module.set("exports", r)?;
+
         Ok(())
     }
 }

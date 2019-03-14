@@ -34,7 +34,7 @@ impl<'a> Clone for Reference<'a> {
 }
 
 impl<'a> ToDuktape for Reference<'a> {
-    fn to_context(&self, _ctx: &Context) -> DukResult<()> {
+    fn to_context(self, _ctx: &Context) -> DukResult<()> {
         self.push();
         Ok(())
     }

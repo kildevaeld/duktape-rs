@@ -5,6 +5,7 @@ fn main() {
     let ctx = Context::new().unwrap();
 
     Require::new()
+        .env(Environment::from_env().unwrap())
         .resolver(
             "file",
             file_resolver(

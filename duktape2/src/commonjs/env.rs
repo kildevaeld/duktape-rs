@@ -26,6 +26,10 @@ impl Pipes {
         &self.stdout
     }
 
+    pub fn stdout_mut(&mut self) -> &mut Write {
+        &mut self.stdout
+    }
+
     pub fn stderr(&self) -> &Write {
         &self.stderr
     }
@@ -80,6 +84,10 @@ impl Environment {
 
     pub fn pipes(&self) -> &Pipes {
         &self.pipes
+    }
+
+    pub fn pipes_mut(&mut self) -> &mut Pipes {
+        &mut self.pipes
     }
 
     pub fn env(&self) -> Option<HashMap<String, String>> {

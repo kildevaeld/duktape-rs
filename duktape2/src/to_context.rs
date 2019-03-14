@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::ptr;
 
 pub trait ToDuktape {
-    fn to_context(&self, ctx: &Context) -> DukResult<()>;
+    fn to_context(self, ctx: &Context) -> DukResult<()>;
 }
 
 pub trait ToDuktapeContext: Sized {
@@ -20,24 +20,24 @@ impl ToDuktapeContext for Context {
 
 impl<'a, T> ToDuktape for &'a T
 where
-    T: ToDuktape,
+    T: ToDuktape + Clone,
 {
-    fn to_context(&self, ctx: &Context) -> DukResult<()> {
-        (*self).to_context(ctx)
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
+        self.clone().to_context(ctx)
     }
 }
 
 macro_rules! impl_for_ser {
     ($T:ty, $U:ty, $func:ident) => {
         impl ToDuktape for $T {
-            fn to_context(&self, ctx: &Context) -> DukResult<()> {
-                ctx.$func(*self as $U);
+            fn to_context(self, ctx: &Context) -> DukResult<()> {
+                ctx.$func(self as $U);
                 Ok(())
             }
         }
 
         // impl ToDuktape for &$T {
-        //     fn to_context(&self, ctx: &Context) -> DukResult<()> {
+        //     fn to_context(self, ctx: &Context) -> DukResult<()> {
         //         ctx.$func(*self as $U);
         //         Ok(())
         //     }
@@ -59,14 +59,14 @@ impl_for_ser!(f64, f64, push_number);
 impl_for_ser!(bool, bool, push_boolean);
 
 impl ToDuktape for () {
-    fn to_context(&self, ctx: &Context) -> DukResult<()> {
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
         ctx.push_undefined();
         Ok(())
     }
 }
 
 impl<T: ToDuktape> ToDuktape for Option<T> {
-    fn to_context(&self, ctx: &Context) -> DukResult<()> {
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
         match self {
             Some(t) => t.to_context(ctx)?,
             None => {
@@ -78,14 +78,14 @@ impl<T: ToDuktape> ToDuktape for Option<T> {
 }
 
 impl ToDuktape for String {
-    fn to_context(&self, ctx: &Context) -> DukResult<()> {
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
         ctx.push_string(self);
         Ok(())
     }
 }
 
 impl<'a> ToDuktape for &'a str {
-    fn to_context(&self, ctx: &Context) -> DukResult<()> {
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
         ctx.push_string(self);
         Ok(())
     }
@@ -106,7 +106,7 @@ impl<'a> ToDuktape for &'a str {
 // }
 
 impl<'a, T: ToDuktape> ToDuktape for Vec<T> {
-    fn to_context(&self, ctx: &Context) -> DukResult<()> {
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
         ctx.push_array();
         let mut i = 0;
         for v in self {
@@ -119,7 +119,7 @@ impl<'a, T: ToDuktape> ToDuktape for Vec<T> {
 }
 
 impl<T: ToDuktape> ToDuktape for HashMap<String, T> {
-    fn to_context(&self, ctx: &Context) -> DukResult<()> {
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
         ctx.push_object();
         for (k, v) in self {
             v.to_context(ctx)?;
@@ -130,7 +130,7 @@ impl<T: ToDuktape> ToDuktape for HashMap<String, T> {
 }
 
 impl<T: ToDuktape> ToDuktape for BTreeMap<String, T> {
-    fn to_context(&self, ctx: &Context) -> DukResult<()> {
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
         ctx.push_object();
         for (k, v) in self {
             v.to_context(ctx)?;
@@ -141,7 +141,7 @@ impl<T: ToDuktape> ToDuktape for BTreeMap<String, T> {
 }
 
 impl ToDuktape for &[u8] {
-    fn to_context(&self, ctx: &Context) -> DukResult<()> {
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
         let buffer =
             unsafe { duktape_sys::duk_push_fixed_buffer(ctx.inner, self.len()) } as *mut u8;
 

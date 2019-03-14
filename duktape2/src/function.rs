@@ -73,7 +73,7 @@ impl<'a> JSFunction<'a> for Function<'a> {}
 impl<'a> JSObject<'a> for Function<'a> {}
 
 impl<'a> ToDuktape for Function<'a> {
-    fn to_context(&self, _ctx: &Context) -> DukResult<()> {
+    fn to_context(self, _ctx: &Context) -> DukResult<()> {
         self.push();
         Ok(())
     }

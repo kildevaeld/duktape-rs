@@ -96,18 +96,35 @@ impl Callable for Box<dyn Callable> {
 
 // impl<T: Callable> ToDuktape for T {}
 
-impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for T {
+// impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for T {
+//     fn to_context(self, ctx: &Context) -> DukResult<()> {
+//         let boxed: Box<dyn Callable> = Box::new(self);
+//         unsafe { push_callable(ctx, boxed) };
+//         Ok(())
+//     }
+// }
+
+// impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for (i32, T) {
+//     fn to_context(self, ctx: &Context) -> DukResult<()> {
+//         let boxed: Box<dyn Callable> = Box::new(self);
+//         unsafe { push_callable(ctx, boxed) };
+//         Ok(())
+//     }
+// }
+
+struct JSFunc {
+    inner: Box<dyn Callable>,
+}
+
+impl ToDuktape for JSFunc {
     fn to_context(self, ctx: &Context) -> DukResult<()> {
-        let boxed: Box<dyn Callable> = Box::new(self);
-        unsafe { push_callable(ctx, boxed) };
+        unsafe { push_callable(ctx, self.inner) };
         Ok(())
     }
 }
 
-impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for (i32, T) {
-    fn to_context(self, ctx: &Context) -> DukResult<()> {
-        let boxed: Box<dyn Callable> = Box::new(self);
-        unsafe { push_callable(ctx, boxed) };
-        Ok(())
+pub fn jsfunc<F: Callable + 'static>(call: F) -> impl ToDuktape {
+    JSFunc {
+        inner: Box::new(call),
     }
 }

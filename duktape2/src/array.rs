@@ -75,7 +75,7 @@ impl<'a> Constructable<'a> for Array<'a> {
 }
 
 impl<'a> ToDuktape for Array<'a> {
-    fn to_context(&self, _ctx: &Context) -> DukResult<()> {
+    fn to_context(self, _ctx: &Context) -> DukResult<()> {
         self.push();
         Ok(())
     }

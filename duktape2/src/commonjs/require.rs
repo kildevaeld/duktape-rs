@@ -1,4 +1,5 @@
 use super::super::callable::Callable;
+use super::super::callable::*;
 use super::super::context::{Context, Type};
 use super::super::error::{DukError, DukResult};
 use super::super::from_context::FromDuktapeContext;
@@ -89,6 +90,11 @@ impl RequireBuilder {
         self
     }
 
+    pub fn env(mut self, env: Environment) -> Self {
+        self.env = Some(env);
+        self
+    }
+
     // Add a resovler to the builder
     pub fn resolver<T: AsRef<str>>(
         mut self,
@@ -139,34 +145,34 @@ impl RequireBuilder {
             },
         )?;
 
-        process.set(
-            "stdout",
-            (0, |ctx: &Context| {
-                let object = ctx.create::<Object>()?;
+        let stdout = ctx.create::<Object>()?;
 
-                object.set(
-                    "write",
-                    (1, |ctx: &Context| {
-                        let cjs = ctx.data().unwrap().get::<CommonJS>().unwrap();
-                        let pipes = match cjs.env {
-                            Some(s) => s.pipes(),
-                            None => return Ok(0),
-                        };
+        stdout.set(
+            "write",
+            jsfunc((1, |ctx: &Context| {
+                let cjs = ctx.data_mut().unwrap().get_mut::<CommonJS>().unwrap();
+                let pipes = match &mut cjs.env {
+                    Some(s) => s.pipes_mut(),
+                    None => return Ok(0),
+                };
 
-                        let arg = match ctx.get_type(0) {
-                            Type::String => ctx.get_string(0)?.as_bytes(),
-                            _ => duk_type_error!("invalid type"),
-                        };
+                let arg = match ctx.get_type(0) {
+                    Type::String => ctx.get_string(0)?.as_bytes(),
+                    _ => duk_type_error!("invalid type"),
+                };
 
-                        pipes.stdout().write(arg)?;
+                let size = pipes.stdout_mut().write(arg)?;
+                ctx.push_uint(size as u32);
 
-                        Ok(0)
-                    }),
-                );
+                Ok(1)
+            })),
+        )?;
 
-                Ok(0)
-            }),
-        );
+        process.set("stdout", stdout)?;
+
+        ctx.push_global_object();
+        process.push();
+        ctx.put_prop_string(-2, "process");
 
         Ok(())
     }
@@ -187,7 +193,7 @@ impl RequireBuilder {
         ctx.pop(1);
 
         if self.env.is_some() {
-            self.build_environment(ctx);
+            self.build_environment(ctx)?;
         }
 
         let cjs = CommonJS {
@@ -291,7 +297,7 @@ impl Require {
 
         let id = match resolver.resolver.resolve(id, &parent, &repo.extensions()) {
             Ok(id) => id,
-            Err(e) => return Err(DukError::with(e)),
+            Err(e) => return Err(e),
         };
 
         if self.has_cache(ctx, &id)? {

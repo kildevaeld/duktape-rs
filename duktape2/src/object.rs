@@ -127,7 +127,7 @@ impl<'a> JSValue<'a> for Object<'a> {
 impl<'a> JSObject<'a> for Object<'a> {}
 
 impl<'a> ToDuktape for Object<'a> {
-    fn to_context(&self, _ctx: &Context) -> DukResult<()> {
+    fn to_context(self, _ctx: &Context) -> DukResult<()> {
         self.push();
         Ok(())
     }

@@ -40,7 +40,8 @@ where
             let parent = if parent.is_empty() {
                 self.vfs.path(&self.cwd)
             } else {
-                self.vfs.path(parent)
+                let parent = pathutils::parent_path(&parent).unwrap_or_else(|| parent.to_string());
+                self.vfs.path(&parent)
             };
             parent.resolve(id)
         } else {
