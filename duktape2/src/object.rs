@@ -51,52 +51,6 @@ pub trait JSObject<'a>: JSValue<'a> {
         };
     }
 
-    // fn call<T: AsRef<str>, A: ArgumentList, R: FromDuktape<'a>>(
-    //     &self,
-    //     fn_name: T,
-    //     args: A,
-    // ) -> DukResult<R> {
-    //     self.push();
-    //     let idx = self.ctx().normalize_index(-1);
-    //     self.ctx().push_string(fn_name.as_ref());
-    //     let len = args.len();
-    //     args.push_args(self.ctx())?;
-    //     if let Err(e) = self.ctx().call_prop(idx, len) {
-    //         self.ctx().pop(1);
-    //         return Err(e);
-    //     }
-    //     self.ctx().remove(-2);
-    //     let ret = R::from_context(self.ctx(), -1);
-    //     self.ctx().pop(1);
-    //     ret
-    // }
-
-    // /// Construct a property on the object
-    // fn construct<T: AsRef<str>, A: ArgumentList>(
-    //     &self,
-    //     fn_name: T,
-    //     args: A,
-    // ) -> DukResult<Object<'a>> {
-    //     self.push();
-    //     if !self.ctx().has_prop_string(-1, fn_name.as_ref()) {
-    //         duk_type_error!("not a function");
-    //     }
-
-    //     let len = args.len();
-
-    //     self.ctx().get_prop_string(-1, fn_name.as_ref());
-    //     args.push_args(self.ctx())?;
-    //     if let Err(e) = self.ctx().construct(len) {
-    //         self.ctx().pop(2);
-    //         return Err(e);
-    //     }
-
-    //     self.ctx().remove(-2);
-    //     let o = Object::from_context(self.ctx(), -1);
-    //     self.ctx().pop(1);
-    //     o
-    // }
-
     /// Return keys
     fn keys(&'a self) -> Array<'a> {
         self.ctx()

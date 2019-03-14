@@ -10,6 +10,7 @@ use super::traits::*;
 use std::path::Path;
 use std::str;
 
+
 pub(crate) static REQUIRE_JS: &'static str = include_str!("./require.js");
 
 pub(crate) fn build_require<'a>(ctx: &'a Context, module_id: &str) -> DukResult<Function<'a>> {

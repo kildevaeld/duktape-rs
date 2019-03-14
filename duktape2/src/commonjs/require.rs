@@ -5,16 +5,18 @@ use super::super::from_context::FromDuktapeContext;
 use super::super::object::*;
 use super::super::reference::{JSValue, Reference};
 use super::super::to_context::{ToDuktape, ToDuktapeContext};
+use super::env::Environment;
 use super::loaders::{javascript, json};
 use super::traits::*;
 use super::utils;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use typemap::Key;
 
 pub struct CommonJS {
     pub(crate) loaders: Vec<Loader>,
     resolvers: Vec<Resolver>,
     modules: Vec<Module>,
+    env: Option<Environment>,
 }
 
 impl CommonJS {
@@ -37,6 +39,13 @@ impl CommonJS {
             .iter()
             .map(|m| m.name.clone())
             .collect::<Vec<_>>()
+    }
+
+    pub fn env(&self) -> Option<&Environment> {
+        match &self.env {
+            Some(s) => Some(s),
+            None => None,
+        }
     }
 }
 
@@ -67,6 +76,7 @@ pub struct RequireBuilder {
     loaders: Vec<Loader>,
     resolvers: Vec<Resolver>,
     modules: Vec<Module>,
+    env: Option<Environment>,
 }
 
 impl RequireBuilder {
@@ -116,6 +126,22 @@ impl RequireBuilder {
         self
     }
 
+    pub fn build_environment(&self, ctx: &Context) -> DukResult<()> {
+        let env = self.env.as_ref().unwrap();
+        let process = ctx.create::<Object>()?;
+        let empty = Vec::<String>::new();
+
+        process.set("cwd", env.cwd().to_str().unwrap_or(""))?.set(
+            "args",
+            match env.args() {
+                Some(s) => s,
+                None => &empty,
+            },
+        )?;
+
+        Ok(())
+    }
+
     // Build
     pub fn build(self, ctx: &Context) -> DukResult<bool> {
         ctx.push_global_stash();
@@ -131,10 +157,15 @@ impl RequireBuilder {
 
         ctx.pop(1);
 
+        if self.env.is_some() {
+            self.build_environment(ctx);
+        }
+
         let cjs = CommonJS {
             loaders: self.loaders,
             modules: self.modules,
             resolvers: self.resolvers,
+            env: self.env,
         };
 
         ctx.data_mut()?.insert::<CommonJS>(cjs);
@@ -163,6 +194,7 @@ impl Default for RequireBuilder {
             ],
             resolvers: Vec::new(),
             modules: Vec::new(),
+            env: None,
         };
     }
 }
@@ -170,7 +202,7 @@ impl Default for RequireBuilder {
 pub struct Require;
 
 impl Require {
-    pub fn build() -> RequireBuilder {
+    pub fn new() -> RequireBuilder {
         RequireBuilder::default()
     }
 
@@ -337,7 +369,7 @@ mod tests {
     fn require() {
         let ctx = Context::new().unwrap();
 
-        Require::build().build(&ctx).unwrap();
+        Require::new().build(&ctx).unwrap();
         assert!(ctx.eval("require('module')").is_err());
     }
 
@@ -345,7 +377,7 @@ mod tests {
     fn require_builtin() {
         let ctx = Context::new().unwrap();
 
-        Require::build()
+        Require::new()
             .module(
                 "module",
                 (1, |ctx: &Context| {

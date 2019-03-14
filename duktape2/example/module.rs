@@ -4,7 +4,7 @@ use vfs::physical::PhysicalFS;
 fn main() {
     let ctx = Context::new().unwrap();
 
-    Require::build()
+    Require::new()
         .resolver(
             "file",
             file_resolver(

@@ -12,7 +12,7 @@ vfs = { git = "https://github.com/kildevaeld/vfs-rs.git", optional = true }
 pathutils = { git = "https://github.com/kildevaeld/pathutils-rs.git", optional = true }
 
 [features]
-default = []
+default = ["commonjs"]
 commonjs = ["vfs", "pathutils"]
 
 [[example]]
