@@ -184,12 +184,12 @@ impl Context {
         }
 
         unsafe { privates::init_refs(d) };
-        unsafe { privates::init_data(d) };
+        unsafe { privates::init_global_data(d) };
 
         Ok(Context {
             inner: d,
             managed: true,
-            data: unsafe { privates::get_data(d) },
+            data: unsafe { privates::get_global_data(d) },
         })
     }
 
@@ -197,11 +197,11 @@ impl Context {
     /// The duktape context will **not** be managed.
     pub(crate) fn with(duk: *mut duk_context) -> Context {
         unsafe { privates::init_refs(duk) };
-        unsafe { privates::init_data(duk) };
+        unsafe { privates::init_global_data(duk) };
         Context {
             inner: duk,
             managed: false,
-            data: unsafe { privates::get_data(duk) },
+            data: unsafe { privates::get_global_data(duk) },
         }
     }
 
