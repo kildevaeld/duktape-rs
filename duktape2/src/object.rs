@@ -4,10 +4,12 @@ use super::context::{Constructable, Context, Idx, Type};
 use super::error::DukResult;
 use super::from_context::*;
 use super::function::Function;
+use super::privates::{get_data, init_data};
 use super::property::{Property, PropertyBuilder};
 use super::reference::{JSValue, Reference};
 use super::to_context::*;
 use std::fmt;
+use typemap::TypeMap;
 
 pub trait JSObject<'a>: JSValue<'a> {
     fn get<T: AsRef<[u8]>, V: FromDuktape<'a>>(&self, prop: T) -> DukResult<V> {
@@ -67,6 +69,22 @@ pub trait JSObject<'a>: JSValue<'a> {
         duk_ok_or_pop!(definition.build(self.ctx(), -1), self.ctx(), 1);
         self.ctx().pop(1);
         Ok(())
+    }
+
+    fn data(&self) -> &'a TypeMap {
+        unsafe {
+            init_data(self.ctx().inner, -1);
+            let data = get_data(self.ctx().inner, -1);
+            &*data
+        }
+    }
+
+    fn data_mut(&self) -> &'a mut TypeMap {
+        unsafe {
+            init_data(self.ctx().inner, -1);
+            let data = get_data(self.ctx().inner, -1);
+            &mut *data
+        }
     }
 }
 
