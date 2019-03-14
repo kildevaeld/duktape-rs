@@ -29,6 +29,10 @@ pub trait JSArray<'a>: JSValue<'a> {
         self.ctx().pop(1);
         ret
     }
+
+    fn iter(&'a self) -> ArrayIterator<'a, Self> {
+        ArrayIterator::new(self)
+    }
 }
 
 #[derive(Clone)]
@@ -87,21 +91,6 @@ impl<'a> FromDuktape<'a> for Array<'a> {
     }
 }
 
-// impl<'a> Constructable<'a> for Array<'a> {
-//     fn construct(duk: &'a Context) -> DukResult<Self> {
-//         duk.push_array();
-//         let o = match Array::from_context(duk, -1) {
-//             Ok(o) => o,
-//             Err(e) => {
-//                 duk.pop(1);
-//                 return Err(e);
-//             }
-//         };
-//         duk.pop(1);
-//         Ok(o)
-//     }
-// }
-
 // impl<'a> ArgumentList for Array<'a> {
 //     fn len(&self) -> i32 {
 //         1
@@ -112,35 +101,37 @@ impl<'a> FromDuktape<'a> for Array<'a> {
 //     }
 // }
 
-// struct ArrayIterator<'a, A: JSArray<'a>> {
-//     array: &'a A,
-//     index: u32,
-// }
+pub struct ArrayIterator<'a, A: JSArray<'a>> {
+    array: &'a A,
+    index: u32,
+}
 
-// impl<'a, A: JSArray<'a>> ArrayIterator<'a, A> {
-//     pub fn new(array: &'a A) -> ArrayIterator<'a, A> {
-//         ArrayIterator {
-//             array: array,
-//             index: 0,
-//         }
-//     }
-// }
+impl<'a, A: JSArray<'a>> ArrayIterator<'a, A> {
+    pub fn new(array: &'a A) -> ArrayIterator<'a, A> {
+        ArrayIterator {
+            array: array,
+            index: 0,
+        }
+    }
+}
 
-// impl<'a, A: JSArray<'a>> iter::Iterator for ArrayIterator<'a, A> {
-//     type Item = Reference<'a>;
+impl<'a, A: JSArray<'a>> std::iter::Iterator for ArrayIterator<'a, A> {
+    type Item = Reference<'a>;
 
-//     fn next(&mut self) -> Option<Reference<'a>> {
-//         if self.index == self.array.len() as u32 {
-//             return None;
-//         }
+    fn next(&mut self) -> Option<Reference<'a>> {
+        if self.index == self.array.len() as u32 {
+            return None;
+        }
 
-//         let r = match self.array.get::<Reference>(self.index) {
-//             Ok(m) => m,
-//             Err(_) => return None,
-//         };
+        let r = match self.array.get::<Reference>(self.index) {
+            Ok(m) => m,
+            Err(_) => return None,
+        };
 
-//         self.index += 1;
+        self.index += 1;
 
-//         Some(r)
-//     }
-// }
+        Some(r)
+    }
+}
+
+impl<'a, A: JSArray<'a>> std::iter::ExactSizeIterator for ArrayIterator<'a, A> {}
