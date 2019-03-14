@@ -17,6 +17,16 @@ pub trait JSFunction<'a>: JSObject<'a> {
         Ok(ret)
     }
 
+    fn construct<Args: ArgumentList, T: FromDuktape<'a>>(&self, args: Args) -> DukResult<T> {
+        self.push();
+        let len = args.len();
+        args.push_args(self.ctx())?;
+        self.ctx().construct(len)?;
+        let ret = T::from_context(self.ctx(), -1)?;
+        self.ctx().pop(1);
+        Ok(ret)
+    }
+
     fn set_name<T: AsRef<str>>(&mut self, name: T) -> &mut Self {
         self.push();
         self.ctx().push_string("name").push_string(name.as_ref());
@@ -30,6 +40,10 @@ pub trait JSFunction<'a>: JSObject<'a> {
         }
         self.ctx().pop(1);
         self
+    }
+
+    fn name(&self) -> &'a str {
+        self.get("name").unwrap_or("")
     }
 }
 

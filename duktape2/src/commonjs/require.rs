@@ -4,7 +4,7 @@ use super::super::error::{DukError, DukResult};
 use super::super::from_context::FromDuktapeContext;
 use super::super::object::*;
 use super::super::reference::{JSValue, Reference};
-use super::super::to_context::{ToDuktape, ToDuktapeContext};
+use super::super::to_context::*;
 use super::env::Environment;
 use super::loaders::{javascript, json};
 use super::traits::*;
@@ -138,6 +138,35 @@ impl RequireBuilder {
                 None => &empty,
             },
         )?;
+
+        process.set(
+            "stdout",
+            (0, |ctx: &Context| {
+                let object = ctx.create::<Object>()?;
+
+                object.set(
+                    "write",
+                    (1, |ctx: &Context| {
+                        let cjs = ctx.data().unwrap().get::<CommonJS>().unwrap();
+                        let pipes = match cjs.env {
+                            Some(s) => s.pipes(),
+                            None => return Ok(0),
+                        };
+
+                        let arg = match ctx.get_type(0) {
+                            Type::String => ctx.get_string(0)?.as_bytes(),
+                            _ => duk_type_error!("invalid type"),
+                        };
+
+                        pipes.stdout().write(arg)?;
+
+                        Ok(0)
+                    }),
+                );
+
+                Ok(0)
+            }),
+        );
 
         Ok(())
     }

@@ -7,6 +7,7 @@ mod macros;
 mod argument_list;
 mod array;
 mod callable;
+pub mod class;
 #[cfg(feature = "commonjs")]
 pub mod commonjs;
 mod context;
@@ -16,6 +17,7 @@ mod function;
 mod object;
 mod property;
 mod reference;
+mod streams;
 mod to_context;
 
 mod privates;
@@ -29,6 +31,7 @@ pub mod types {
 
 pub mod prelude {
     pub use super::callable::*;
+    pub use super::class;
     #[cfg(feature = "commonjs")]
     pub use super::commonjs::*;
     pub use super::context::*;
