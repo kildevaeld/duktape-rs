@@ -34,7 +34,7 @@ impl CommonJS {
             .map(|m| m.protocol.clone())
             .collect::<Vec<_>>()
     }
-
+ 
     pub fn modules(&self) -> Vec<String> {
         self.modules
             .iter()
