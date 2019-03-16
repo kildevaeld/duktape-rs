@@ -43,7 +43,7 @@ impl ContextCommonJS for Context {
 
         let loader = match common.loaders.iter().find(|m| m.extension.as_str() == ext) {
             Some(loader) => loader,
-            None => duk_uri_error!(format!("no loader for: {:?}", ext)),
+            None => return duk_uri_error!(format!("no loader for: {:?}", ext)),
         };
 
         loader.loader.load(&module, script.as_ref())?;

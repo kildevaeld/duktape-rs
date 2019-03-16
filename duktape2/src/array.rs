@@ -84,7 +84,7 @@ impl<'a> ToDuktape for Array<'a> {
 impl<'a> FromDuktape<'a> for Array<'a> {
     fn from_context(ctx: &'a Context, index: i32) -> DukResult<Self> {
         if !ctx.is_array(index) {
-            duk_type_error!("not an array");
+            return duk_type_error!("not an array");
         }
         let re = Reference::new(ctx, index)?;
         Ok(Array::new(re))

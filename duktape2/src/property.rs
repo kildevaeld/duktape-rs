@@ -127,7 +127,7 @@ impl<'a> Property<'a> {
     pub fn construct<A: ArgumentList>(&self, args: A) -> DukResult<Object<'a>> {
         self._ref.push();
         if !self._ref.ctx().has_prop_string(-1, self.prop) {
-            duk_type_error!("not a function");
+            return duk_type_error!("not a function");
         }
 
         let len = args.len();

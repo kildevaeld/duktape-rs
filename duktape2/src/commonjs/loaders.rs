@@ -1,4 +1,3 @@
-use super::super::context::Context;
 use super::super::error::DukResult;
 use super::super::from_context::FromDuktapeContext;
 use super::super::object::{JSObject, Object};

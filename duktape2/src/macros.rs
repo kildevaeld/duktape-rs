@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! duk_error {
     ($msg: expr) => {
-        return Err($crate::error::DukError::new(
+        Err($crate::error::DukError::new(
             $crate::error::DukErrorCode::Error,
             $msg,
         ));
@@ -11,7 +11,7 @@ macro_rules! duk_error {
 #[macro_export]
 macro_rules! duk_type_error {
     ($msg: expr) => {
-        return Err($crate::error::DukError::new(
+        Err($crate::error::DukError::new(
             $crate::error::DukErrorCode::Type,
             $msg,
         ));
@@ -21,7 +21,7 @@ macro_rules! duk_type_error {
 #[macro_export]
 macro_rules! duk_reference_error {
     ($msg: expr) => {
-        return Err($crate::error::DukError::new(
+        Err($crate::error::DukError::new(
             $crate::error::DukErrorCode::Reference,
             $msg,
         ));
@@ -31,7 +31,7 @@ macro_rules! duk_reference_error {
 #[macro_export]
 macro_rules! duk_uri_error {
     ($msg: expr) => {
-        return Err($crate::error::DukError::new(
+        Err($crate::error::DukError::new(
             $crate::error::DukErrorCode::Uri,
             $msg,
         ));

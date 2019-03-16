@@ -10,7 +10,7 @@ use super::env::Environment;
 use super::loaders::{javascript, json};
 use super::traits::*;
 use super::utils;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use typemap::Key;
 
 pub struct CommonJS {
@@ -34,7 +34,7 @@ impl CommonJS {
             .map(|m| m.protocol.clone())
             .collect::<Vec<_>>()
     }
- 
+
     pub fn modules(&self) -> Vec<String> {
         self.modules
             .iter()
@@ -158,7 +158,7 @@ impl RequireBuilder {
 
                 let arg = match ctx.get_type(0) {
                     Type::String => ctx.get_string(0)?.as_bytes(),
-                    _ => duk_type_error!("invalid type"),
+                    _ => return duk_type_error!("invalid type"),
                 };
 
                 let size = pipes.stdout_mut().write(arg)?;
@@ -251,7 +251,7 @@ impl Require {
         // Find buildin
         let found = repo.modules.iter().find(|m| m.name == id);
         if found.is_none() {
-            duk_type_error!(format!("could not find module: '{}'", id));
+            return duk_type_error!(format!("could not find module: '{}'", id));
         }
 
         if self.has_cache(ctx, id)? {
@@ -288,7 +288,7 @@ impl Require {
         {
             Some(resolver) => resolver,
             None => {
-                duk_type_error!("could not find resolver for protocol: '{}'");
+                return duk_type_error!("could not find resolver for protocol: '{}'");
             }
         };
 
@@ -313,14 +313,14 @@ impl Require {
         };
 
         if path.extension().is_none() {
-            duk_type_error!(format!("could not infer extension for path {}", id));
+            return duk_type_error!(format!("could not infer extension for path {}", id));
         }
 
         let ext = path.extension().unwrap();
 
         let loader = match repo.loaders.iter().find(|m| m.extension.as_str() == ext) {
             Some(loader) => loader,
-            None => duk_type_error!(format!("no loader for: {:?}", ext)),
+            None => return duk_type_error!(format!("no loader for: {:?}", ext)),
         };
 
         let content = match resolver.resolver.read(&id) {
@@ -384,7 +384,7 @@ impl Callable for Require {
         }?;
 
         if !module.has("exports") {
-            duk_type_error!(format!("module does not have a 'exports' field"));
+            return duk_type_error!(format!("module does not have a 'exports' field"));
         }
 
         self.set_cache(ctx, &id, &module)?;

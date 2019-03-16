@@ -191,6 +191,6 @@ impl<'a> From<Object<'a>> for DukResult<Array<'a>> {
         if obj.is(Type::Array) {
             return Ok(Array::new(obj._ref.clone()));
         }
-        duk_type_error!("could not interpret object as array");
+        duk_type_error!("could not interpret object as array")
     }
 }

@@ -354,7 +354,7 @@ impl Context {
     pub fn get_error<'a>(&'a self, idx: Idx) -> DukResult<DukError> {
         let code = self.get_error_code(idx);
         if code == DukErrorCode::None {
-            duk_type_error!("not an error");
+            return duk_type_error!("not an error");
         }
 
         if self.has_prop_string(-1, "stack") {
@@ -377,7 +377,7 @@ impl Context {
 
     pub fn get_number(&self, idx: Idx) -> DukResult<f64> {
         if !self.is_number(idx) {
-            duk_type_error!("not a number");
+            return duk_type_error!("not a number");
         }
         let ret = unsafe { duk::duk_get_number(self.inner, idx) };
         Ok(ret)
@@ -385,7 +385,7 @@ impl Context {
 
     pub fn get_int(&self, idx: Idx) -> DukResult<i32> {
         if !self.is_number(idx) {
-            duk_type_error!("not an integer");
+            return duk_type_error!("not an integer");
         }
         let ret = unsafe { duk::duk_get_int(self.inner, idx) };
         Ok(ret)
@@ -393,7 +393,7 @@ impl Context {
 
     pub fn get_uint(&self, idx: Idx) -> DukResult<u32> {
         if !self.is_number(idx) {
-            duk_type_error!("not an unsigned integer");
+            return duk_type_error!("not an unsigned integer");
         }
         let ret = unsafe { duk::duk_get_uint(self.inner, idx) };
         Ok(ret)
@@ -401,7 +401,7 @@ impl Context {
 
     pub fn get_boolean(&self, idx: Idx) -> DukResult<bool> {
         if !self.is_boolean(idx) {
-            duk_type_error!("not a boolean");
+            return duk_type_error!("not a boolean");
         }
         let ok = unsafe { duk::duk_get_boolean(self.inner, idx) };
         Ok(if ok == 1 { true } else { false })
@@ -409,7 +409,7 @@ impl Context {
 
     pub fn get_string(&self, idx: Idx) -> DukResult<&str> {
         if !self.is_string(idx) {
-            duk_type_error!("not a string");
+            return duk_type_error!("not a string");
         }
         let ostr = unsafe { duk::duk_get_string(self.inner, idx) };
         let s = unsafe { CStr::from_ptr(ostr).to_str()? }; //.to_string();
@@ -418,7 +418,7 @@ impl Context {
 
     pub fn get_bytes(&self, idx: Idx) -> DukResult<&[u8]> {
         if !self.is_buffer(idx) {
-            duk_type_error!("not a buffer");
+            return duk_type_error!("not a buffer");
         }
 
         let r = unsafe {
@@ -657,7 +657,7 @@ impl Context {
     // Strings
     pub fn concat(&self, argc: i32) -> DukResult<()> {
         if argc > self.top() {
-            duk_reference_error!(format!("invalid index: {}", argc));
+            return duk_reference_error!(format!("invalid index: {}", argc));
         }
         unsafe { duk::duk_concat(self.inner, argc) };
         Ok(())
