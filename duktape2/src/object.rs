@@ -45,7 +45,7 @@ pub trait JSObject<'a>: JSValue<'a> {
 
     fn prop(&self, prop: &'a str) -> Property<'a> {
         self.push();
-        let r = Reference::new(self.ctx(), -1);
+        let r = Reference::new(self.ctx(), -1).expect("could get property");
         self.ctx().pop(1);
         return Property {
             _ref: r,
@@ -133,16 +133,9 @@ impl<'a> ToDuktape for Object<'a> {
     }
 }
 
-// impl<'a> ToDuktape for &'a Object<'a> {
-//     fn to_context(self, _ctx: &Context) -> DukResult<()> {
-//         self.push();
-//         Ok(())
-//     }
-// }
-
 impl<'a> FromDuktape<'a> for Object<'a> {
     fn from_context(ctx: &'a Context, index: Idx) -> DukResult<Self> {
-        let re = Reference::new(ctx, index);
+        let re = Reference::new(ctx, index)?;
         Ok(Object::new(re))
     }
 }

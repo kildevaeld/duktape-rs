@@ -12,9 +12,9 @@ pub struct Reference<'a> {
 }
 
 impl<'a> Reference<'a> {
-    pub(crate) fn new(ctx: &'a Context, idx: Idx) -> Reference<'a> {
-        let refer = ctx.make_ref(idx);
-        Reference { ctx, _ref: refer }
+    pub(crate) fn new(ctx: &'a Context, idx: Idx) -> DukResult<Reference<'a>> {
+        let refer = ctx.make_ref(idx)?;
+        Ok(Reference { ctx, _ref: refer })
     }
 }
 
@@ -27,7 +27,7 @@ impl<'a> Drop for Reference<'a> {
 impl<'a> Clone for Reference<'a> {
     fn clone(&self) -> Self {
         self.push();
-        let r = Reference::new(self.ctx, -1);
+        let r = Reference::new(self.ctx, -1).expect("could not clone reference");
         self.ctx.pop(1);
         r
     }
@@ -42,7 +42,7 @@ impl<'a> ToDuktape for Reference<'a> {
 
 impl<'a> FromDuktape<'a> for Reference<'a> {
     fn from_context(ctx: &'a Context, index: i32) -> DukResult<Self> {
-        Ok(Reference::new(ctx, index))
+        Reference::new(ctx, index)
     }
 }
 

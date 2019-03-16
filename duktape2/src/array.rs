@@ -86,7 +86,7 @@ impl<'a> FromDuktape<'a> for Array<'a> {
         if !ctx.is_array(index) {
             duk_type_error!("not an array");
         }
-        let re = Reference::new(ctx, index);
+        let re = Reference::new(ctx, index)?;
         Ok(Array::new(re))
     }
 }

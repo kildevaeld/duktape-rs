@@ -91,18 +91,6 @@ impl Default for PropertyFlag {
     }
 }
 
-// #[derive(PartialEq, Debug, Clone)]
-// pub enum ErrorCode {
-//     None,      /* no error (e.g. from duk_get_error_code()) */
-//     Error,     /* Error */
-//     Eval,      /* EvalError */
-//     Range,     /* RangeError */
-//     Reference, /* ReferenceError */
-//     Syntax,    /* SyntaxError */
-//     Type,      /* TypeError */
-//     Uri,
-// }
-
 pub struct Context {
     pub(crate) inner: *mut duk_context,
     managed: bool,
@@ -729,9 +717,9 @@ impl Context {
     }
 
     // Refes
-    pub fn make_ref(&self, idx: Idx) -> RefId {
-        self.dup(idx);
-        unsafe { privates::make_ref(self.inner) }
+    pub fn make_ref(&self, idx: Idx) -> DukResult<RefId> {
+        self.dup(idx)?;
+        unsafe { Ok(privates::make_ref(self.inner)) }
     }
 
     pub fn push_ref(&self, ref_id: &RefId) -> &Self {

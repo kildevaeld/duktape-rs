@@ -88,7 +88,7 @@ impl<'a> ToDuktape for Function<'a> {
 
 impl<'a> FromDuktape<'a> for Function<'a> {
     fn from_context(ctx: &'a Context, index: Idx) -> DukResult<Self> {
-        let re = Reference::new(ctx, index);
+        let re = Reference::new(ctx, index)?;
         Ok(Function::new(re))
     }
 }
