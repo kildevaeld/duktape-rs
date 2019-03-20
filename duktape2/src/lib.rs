@@ -27,6 +27,7 @@ pub mod types {
     pub use super::array::*;
     pub use super::object::*;
     pub use super::reference::*;
+    pub use super::function::*;
 }
 
 pub mod prelude {
