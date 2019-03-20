@@ -37,7 +37,7 @@ impl ContextCommonJS for Context {
 
         let module = utils::push_module_object(self, real_p, true)?;
 
-        let common = self.data()?.get::<CommonJS>().unwrap();
+        let common = self.data().get::<CommonJS>().unwrap();
 
         let ext = real_p.extension().unwrap();
 

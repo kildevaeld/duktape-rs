@@ -150,7 +150,7 @@ impl RequireBuilder {
         stdout.set(
             "write",
             jsfunc((1, |ctx: &Context| {
-                let cjs = ctx.data_mut().unwrap().get_mut::<CommonJS>().unwrap();
+                let cjs = ctx.data_mut().get_mut::<CommonJS>().unwrap();
                 let pipes = match &mut cjs.env {
                     Some(s) => s.pipes_mut(),
                     None => return Ok(0),
@@ -203,7 +203,7 @@ impl RequireBuilder {
             env: self.env,
         };
 
-        ctx.data_mut()?.insert::<CommonJS>(cjs);
+        ctx.data_mut().insert::<CommonJS>(cjs);
 
         ctx.push_global_object()
             .push(utils::build_require(ctx, "")?)?
@@ -375,7 +375,7 @@ impl Callable for Require {
     fn call(&self, ctx: &Context) -> DukResult<i32> {
         let opts: Object = ctx.get(0)?;
 
-        let common = ctx.data()?.get::<CommonJS>().unwrap();
+        let common = ctx.data().get::<CommonJS>().unwrap();
 
         let (module, id) = if opts.get::<_, Reference>("protocol")?.is(Type::Null) {
             self.load_builtin_module(opts.get("id")?, ctx, &common)

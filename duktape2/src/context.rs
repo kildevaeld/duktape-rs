@@ -94,7 +94,7 @@ impl Default for PropertyFlag {
 pub struct Context {
     pub(crate) inner: *mut duk_context,
     managed: bool,
-    data: *mut TypeMap,
+    //data: *mut TypeMap,
 }
 
 macro_rules! handle_error {
@@ -177,7 +177,7 @@ impl Context {
         Ok(Context {
             inner: d,
             managed: true,
-            data: unsafe { privates::get_global_data(d) },
+            //data: unsafe { privates::get_global_data(d) },
         })
     }
 
@@ -189,25 +189,39 @@ impl Context {
         Context {
             inner: duk,
             managed: false,
-            data: unsafe { privates::get_global_data(duk) },
+            //data: unsafe { privates::get_global_data(duk) },
         }
     }
 
-    pub fn data<'a>(&'a self) -> DukResult<&'a TypeMap> {
+    // pub fn data<'a>(&'a self) -> DukResult<&'a TypeMap> {
+    //     unsafe {
+    //         if self.data.is_null() {
+    //             return Err(InsufficientMemory.into());
+    //         }
+    //         Ok(&*self.data)
+    //     }
+    // }
+
+    // pub fn data_mut<'a>(&'a self) -> DukResult<&'a mut TypeMap> {
+    //     unsafe {
+    //         if self.data.is_null() {
+    //             return Err(InsufficientMemory.into());
+    //         }
+    //         Ok(&mut *self.data)
+    //     }
+    // }
+
+    pub fn data<'a>(&'a self) -> &'a TypeMap {
         unsafe {
-            if self.data.is_null() {
-                return Err(InsufficientMemory.into());
-            }
-            Ok(&*self.data)
+            let data = privates::get_global_data(self.inner);
+            &*data
         }
     }
 
-    pub fn data_mut<'a>(&'a self) -> DukResult<&'a mut TypeMap> {
+    pub fn data_mut<'a>(&'a self) -> &'a mut TypeMap {
         unsafe {
-            if self.data.is_null() {
-                return Err(InsufficientMemory.into());
-            }
-            Ok(&mut *self.data)
+            let data = privates::get_global_data(self.inner);
+            &mut *data
         }
     }
 
@@ -747,7 +761,7 @@ impl Drop for Context {
             };
         }
 
-        self.data = ptr::null_mut();
+        //self.data = ptr::null_mut();
         self.inner = ptr::null_mut();
     }
 }
