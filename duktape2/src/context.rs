@@ -97,6 +97,10 @@ pub struct Context {
     //data: *mut TypeMap,
 }
 
+unsafe impl Send for Context {}
+unsafe impl Sync for Context {}
+
+
 macro_rules! handle_error {
     ($ret: expr, $ctx: expr) => {
         if ($ret) != duk::DUK_EXEC_SUCCESS as i32 {
