@@ -40,10 +40,12 @@ impl_for_der!(isize, get_number, is_number);
 impl_for_der!(i8, get_int, is_number);
 impl_for_der!(i16, get_int, is_number);
 impl_for_der!(i32, get_int, is_number);
+impl_for_der!(f64, get_number, is_number);
 impl_for_der!(usize, get_number, is_number);
 impl_for_der!(u8, get_uint, is_number);
 impl_for_der!(u16, get_uint, is_number);
 impl_for_der!(u32, get_uint, is_number);
+
 
 impl<'de> FromDuktape<'de> for bool {
     fn from_context(ctx: &'de Context, index: Idx) -> DukResult<Self> {
@@ -74,3 +76,10 @@ impl<'de> FromDuktape<'de> for &'de [u8] {
         ctx.get_bytes(index)
     }
 }
+
+impl<'de> FromDuktape<'de> for Vec<u8> {
+     fn from_context(ctx: &'de Context, index: Idx) -> DukResult<Self> {
+        ctx.get_bytes(index).map(|m| Vec::from(m))
+    }
+}
+

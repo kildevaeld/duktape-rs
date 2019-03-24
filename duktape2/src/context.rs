@@ -197,24 +197,6 @@ impl Context {
         }
     }
 
-    // pub fn data<'a>(&'a self) -> DukResult<&'a TypeMap> {
-    //     unsafe {
-    //         if self.data.is_null() {
-    //             return Err(InsufficientMemory.into());
-    //         }
-    //         Ok(&*self.data)
-    //     }
-    // }
-
-    // pub fn data_mut<'a>(&'a self) -> DukResult<&'a mut TypeMap> {
-    //     unsafe {
-    //         if self.data.is_null() {
-    //             return Err(InsufficientMemory.into());
-    //         }
-    //         Ok(&mut *self.data)
-    //     }
-    // }
-
     pub fn data<'a>(&'a self) -> &'a TypeMap {
         unsafe {
             let data = privates::get_global_data(self.inner);
