@@ -4,10 +4,13 @@ extern crate bitflags;
 #[macro_use]
 mod macros;
 
+
+
 mod argument_list;
 mod array;
 mod callable;
 // pub mod class;
+// mod streams;
 #[cfg(feature = "commonjs")]
 pub mod commonjs;
 mod context;
@@ -17,10 +20,10 @@ mod function;
 mod object;
 mod property;
 mod reference;
-// mod streams;
 mod to_context;
-
 mod privates;
+#[cfg(feature = "serde")]
+mod serialize;
 
 pub mod types {
     pub use super::argument_list::*;
