@@ -10,9 +10,10 @@ typemap = "^0.3"
 bitflags = "^1.0.4"
 vfs = { git = "https://github.com/kildevaeld/vfs-rs.git", optional = true }
 pathutils = { git = "https://github.com/kildevaeld/pathutils-rs.git", optional = true }
+serde = { version = "^1.0", optional = true }
 
 [features]
-default = ["commonjs"]
+default = ["commonjs", "serde"]
 commonjs = ["vfs", "pathutils"]
 class = []
 

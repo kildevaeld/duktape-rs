@@ -130,3 +130,25 @@ impl From<io::Error> for DukError {
         DukError::with(error)
     }
 }
+
+
+#[cfg(feature = "serde")]
+use serde::de;
+
+#[cfg(feature = "serde")]
+impl de::Error for DukError {
+    #[cold]
+    fn custom<T: fmt::Display>(msg: T) -> DukError {
+        DukError::new(DukErrorCode::Type, msg.to_string())
+        // make_error(msg.to_string())
+    }
+
+    #[cold]
+    fn invalid_type(unexp: de::Unexpected, exp: &de::Expected) -> Self {
+        if let de::Unexpected::Unit = unexp {
+            DukError::custom(format_args!("invalid type: null, expected {}", exp))
+        } else {
+            DukError::custom(format_args!("invalid type: {}, expected {}", unexp, exp))
+        }
+    }
+}
