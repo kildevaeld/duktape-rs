@@ -40,11 +40,14 @@ impl_for_der!(isize, get_number, is_number);
 impl_for_der!(i8, get_int, is_number);
 impl_for_der!(i16, get_int, is_number);
 impl_for_der!(i32, get_int, is_number);
-impl_for_der!(f64, get_number, is_number);
+impl_for_der!(i64, get_int, is_number);
 impl_for_der!(usize, get_number, is_number);
 impl_for_der!(u8, get_uint, is_number);
 impl_for_der!(u16, get_uint, is_number);
 impl_for_der!(u32, get_uint, is_number);
+impl_for_der!(u64, get_uint, is_number);
+impl_for_der!(f64, get_number, is_number);
+impl_for_der!(f32, get_number, is_number);
 
 
 impl<'de> FromDuktape<'de> for bool {
