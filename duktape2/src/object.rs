@@ -1,5 +1,5 @@
 use super::argument_list::ArgumentList;
-use super::array::Array;
+use super::array::{Array, JSArray};
 use super::context::{Constructable, Context, Idx, Type};
 use super::error::DukResult;
 use super::from_context::*;
@@ -10,6 +10,7 @@ use super::reference::{JSValue, Reference};
 use super::to_context::*;
 use std::fmt;
 use typemap::TypeMap;
+use std::iter;
 
 pub trait JSObject<'a>: JSValue<'a> {
     fn get<T: AsRef<[u8]>, V: FromDuktape<'a>>(&self, prop: T) -> DukResult<V> {
@@ -62,6 +63,10 @@ pub trait JSObject<'a>: JSValue<'a> {
             .prop("keys")
             .call::<_, Array>(self.to::<Reference>().unwrap())
             .unwrap()
+    }
+
+    fn iter(&'a self) -> ObjectIterator<'a, Self> {
+        ObjectIterator::new(self, self.keys())
     }
 
     fn define_property(&self, definition: PropertyBuilder) -> DukResult<()> {
@@ -192,5 +197,46 @@ impl<'a> From<Object<'a>> for DukResult<Array<'a>> {
             return Ok(Array::new(obj._ref.clone()));
         }
         duk_type_error!("could not interpret object as array")
+    }
+}
+
+
+pub struct ObjectIterator<'a, O: JSObject<'a>> {
+    object: &'a O,
+    keys: Array<'a>,
+    index: u32,
+}
+
+impl<'a, O: JSObject<'a>> ObjectIterator<'a, O> {
+    pub(crate) fn new(object: &'a O, keys: Array<'a>) -> ObjectIterator<'a, O> {
+        ObjectIterator {
+            object,
+            keys,
+            index: 0,
+        }
+    }
+}
+
+impl<'a, O: JSObject<'a>> iter::Iterator for ObjectIterator<'a, O> {
+    type Item = (&'a str, Reference<'a>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.keys.len() as u32 {
+            return None;
+        }
+
+        let key: &str = match self.keys.get(self.index) {
+            Ok(m) => m,
+            Err(_) => return None,
+        };
+
+        let value = match self.object.get(key) {
+            Ok(m) => m,
+            Err(_) => return None,
+        };
+
+        self.index += 1;
+
+        Some((key, value))
     }
 }
