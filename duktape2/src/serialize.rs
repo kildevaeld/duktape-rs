@@ -3,9 +3,9 @@ use super::error::{DukResult, DukError};
 use super::context::{Context, Idx, Type};
 use super::to_context::ToDuktapeContext;
 use super::from_context::FromDuktapeContext;
-use super::object::{Object, JSObject};
+use super::object::{Object, JSObject, ObjectIterator};
 use super::array::{Array, JSArray};
-use super::reference::JSValue;
+use super::reference::{JSValue, Reference};
 
 
 
@@ -163,6 +163,45 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'a> {
 }
 
 
+pub struct MapAccess<'a> {
+    o: ObjectIterator<'a>,
+    item: Option<(&'a str, Reference<'a>)>,
+}
+
+
+impl<'a> MapAccess<'a> {
+    pub fn new(o: ObjectIterator<'a>) -> MapAccess {
+        MapAccess{o,item:None}
+    }
+}
+
+impl<'de, 'a> de::MapAccess<'de> for MapAccess<'a> {
+    type Error = DukError;
+
+
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
+    where
+        K: de::DeserializeSeed<'de> {
+        self.item = self.o.next();
+
+        if self.item.is_none() {
+            return Ok(None);
+        }
+
+        seed.deserialize(deserializer: D)
+    }
+
+
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
+    where
+        V: de::DeserializeSeed<'de>,
+    {
+
+    }
+
+}
+
+
 pub fn from_str<'a, T>(s: &'a Context, idx: Idx) -> DukResult<T>
 where
     T: Deserialize<'a>,
@@ -206,24 +245,12 @@ fn test_enum() {
     assert_eq!(101, from_str::<i32>(&ctx, -1).unwrap());
     ctx.pop(1);
 
+    ctx.push_number(101.0);
+    assert_eq!(101.0, from_str::<f32>(&ctx, -1).unwrap());
+    ctx.pop(1);
+
 
     
 }
 
 
-// pub struct MapAccess<'a> {
-//     o: Object<'a>,
-// }
-
-
-// impl<'a> MapAccess<'a> {
-//     pub fn new(o: Object<'a>) -> MapAccess {
-//         MapAccess{o}
-//     }
-// }
-
-// impl<'de, 'a> de::MapAccess<'de> for MapAccess<'a> {
-//     type Error = DukError;
-
-
-// }
