@@ -13,7 +13,7 @@ pathutils = { git = "https://github.com/kildevaeld/pathutils-rs.git", optional =
 serde = { version = "^1.0", optional = true }
 
 [features]
-default = ["commonjs", "serde"]
+default = ["commonjs"]
 commonjs = ["vfs", "pathutils"]
 class = []
 
