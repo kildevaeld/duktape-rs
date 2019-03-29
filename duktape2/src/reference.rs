@@ -3,6 +3,7 @@ use super::context::{Context, Idx, Type};
 use super::error::DukResult;
 use super::from_context::*;
 use super::to_context::*;
+use std::fmt;
 
 type RefId = u32;
 
@@ -15,6 +16,12 @@ impl<'a> Reference<'a> {
     pub(crate) fn new(ctx: &'a Context, idx: Idx) -> DukResult<Reference<'a>> {
         let refer = ctx.make_ref(idx)?;
         Ok(Reference { ctx, _ref: refer })
+    }
+}
+
+impl<'a> fmt::Debug for Reference<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Reference").field("type", &self.get_type()).finish()
     }
 }
 
@@ -67,7 +74,7 @@ impl<'a> ArgumentList for Reference<'a> {
     }
 }
 
-pub trait JSValue<'a>: Sized + Clone {
+pub trait JSValue<'a>: Sized + Clone + fmt::Debug {
     fn push(&self) -> &Self;
     fn ctx(&self) -> &'a Context;
 

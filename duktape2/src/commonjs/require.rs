@@ -158,7 +158,8 @@ impl RequireBuilder {
 
                 let arg = match ctx.get_type(0) {
                     Type::String => ctx.get_string(0)?.as_bytes(),
-                    _ => return duk_type_error!("invalid type"),
+                    Type::Buffer => ctx.get_bytes(0)?,
+                    _ => return duk_type_error!(format!("invalid type {:?}", ctx.get_type(0))),
                 };
 
                 let size = pipes.stdout_mut().write(arg)?;

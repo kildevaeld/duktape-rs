@@ -5,6 +5,7 @@ use super::object::JSObject;
 use super::prelude::{FromDuktape, ToDuktape};
 use super::reference::{JSValue, Reference};
 use duktape_sys as duk;
+use std::fmt;
 
 pub trait JSFunction<'a>: JSObject<'a> {
     fn call<Args: ArgumentList, T: FromDuktape<'a>>(&self, args: Args) -> DukResult<T> {
@@ -57,6 +58,14 @@ impl<'a> Function<'a> {
         Function { _ref: refer }
     }
 }
+
+
+impl<'a> fmt::Debug for Function<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Function").field("reference", &self._ref).finish()
+    }
+}
+
 
 impl<'a> JSValue<'a> for Function<'a> {
     fn ctx(&self) -> &'a Context {

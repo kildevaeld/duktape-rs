@@ -118,6 +118,12 @@ impl<'a> fmt::Display for Object<'a> {
     }
 }
 
+impl<'a> fmt::Debug for Object<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Object").field("reference", &self._ref).finish()
+    }
+}
+
 impl<'a> JSValue<'a> for Object<'a> {
     fn push(&self) -> &Self {
         self._ref.push();

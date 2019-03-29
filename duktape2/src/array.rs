@@ -3,7 +3,8 @@ use super::context::Context;
 use super::error::DukResult;
 use super::prelude::{Constructable, FromDuktape, FromDuktapeContext, ToDuktape, ToDuktapeContext};
 use super::reference::{JSValue, Reference};
-// use std::iter;
+use std::fmt;
+use super::object::{Object, JSObject};
 
 pub trait JSArray<'a>: JSValue<'a> {
     fn append<V: ToDuktape>(&self, value: V) -> DukResult<&Self> {
@@ -43,6 +44,26 @@ pub struct Array<'a> {
 impl<'a> Array<'a> {
     pub(crate) fn new(refer: Reference<'a>) -> Array<'a> {
         Array { _ref: refer }
+    }
+}
+
+impl<'a> fmt::Display for Array<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.ctx().get_global_string("JSON");
+        let j: Object = Object::from_context(self.ctx(), -1).unwrap();
+        self.ctx().pop(1);
+        let clone = self.clone();
+        let json = j
+            .prop("stringify")
+            .call::<_, &str>((clone, (), "  "))
+            .unwrap();
+        write!(f, "{}", json)
+    }
+}
+
+impl<'a> fmt::Debug for Array<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Array").field("reference", &self._ref).finish()
     }
 }
 
