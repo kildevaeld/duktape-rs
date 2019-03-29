@@ -650,7 +650,7 @@ impl Context {
                 }
                 return Type::Object;
             }
-            duk::DUK_TYPE_BUFFER => Type::Buffer
+            duk::DUK_TYPE_BUFFER => Type::Buffer,
             _ => Type::Undefined,
         }
     }
