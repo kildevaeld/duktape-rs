@@ -1,12 +1,10 @@
 use super::super::callable::Callable;
-use super::super::callable::*;
 use super::super::context::{Context, Type};
-use super::super::env::Environment;
 use super::super::error::{DukError, DukResult};
 use super::super::from_context::FromDuktapeContext;
-use super::super::object::*;
-use super::super::reference::{JSValue, Reference};
 use super::super::to_context::*;
+use super::super::types::object::*;
+use super::super::types::reference::{JSValue, Reference};
 use super::loaders::{javascript, json};
 use super::traits::*;
 use super::utils;

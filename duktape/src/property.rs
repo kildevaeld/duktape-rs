@@ -1,11 +1,14 @@
-use super::argument_list::ArgumentList;
 use super::callable::Callable;
 use super::context::{Context, Idx, PropertyFlag};
 use super::error::DukResult;
 use super::from_context::FromDuktape;
-use super::object::Object;
-use super::reference::{JSValue, Reference};
 use super::to_context::ToDuktape;
+#[cfg(feature = "types")]
+use super::types::argument_list::ArgumentList;
+#[cfg(feature = "types")]
+use super::types::object::Object;
+#[cfg(feature = "types")]
+use super::types::reference::{JSValue, Reference};
 
 pub struct PropertyBuilder<'a, V: ToDuktape> {
     flags: PropertyFlag,
@@ -16,6 +19,16 @@ pub struct PropertyBuilder<'a, V: ToDuktape> {
 }
 
 impl<'a, V: ToDuktape> PropertyBuilder<'a, V> {
+    pub fn new(name: &'a str) -> PropertyBuilder<'a, ()> {
+        PropertyBuilder {
+            flags: PropertyFlag::default(),
+            setter: None,
+            getter: None,
+            value: None,
+            name: name,
+        }
+    }
+
     pub fn configurable(mut self, on: bool) -> Self {
         if on {
             self.flags |= PropertyFlag::DUK_DEFPROP_SET_CONFIGURABLE;
@@ -104,11 +117,13 @@ impl<'a, V: ToDuktape> PropertyBuilder<'a, V> {
     }
 }
 
+#[cfg(feature = "types")]
 pub struct Property<'a> {
     pub(crate) _ref: Reference<'a>,
     pub(crate) prop: &'a str,
 }
 
+#[cfg(feature = "types")]
 impl<'a> Property<'a> {
     pub fn build<'b>(name: &'b str) -> PropertyBuilder<'b, ()> {
         PropertyBuilder {

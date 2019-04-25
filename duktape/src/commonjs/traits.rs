@@ -1,5 +1,5 @@
 use super::super::error::DukResult;
-use super::super::object::Object;
+use super::super::types::object::Object;
 
 pub trait ModuleResolver {
     fn resolve(&self, id: &str, parent: &str, extensions: &[String]) -> DukResult<String>;

@@ -1,7 +1,7 @@
 extern crate colored;
 extern crate duktape;
 extern crate duktape_es2015;
-extern crate env_logger;
+//extern crate env_logger;
 extern crate log;
 extern crate rustyline;
 #[macro_use]
@@ -11,7 +11,7 @@ mod repl;
 use duktape::prelude::*;
 use duktape::vfs::physical::PhysicalFS;
 fn main() -> DukResult<()> {
-    env_logger::init();
+    //env_logger::init();
 
     let matches = clap_app!(duk =>
         (@arg execute: -e --execute "")

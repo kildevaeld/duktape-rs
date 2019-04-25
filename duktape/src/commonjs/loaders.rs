@@ -1,7 +1,7 @@
 use super::super::error::DukResult;
 use super::super::from_context::FromDuktapeContext;
-use super::super::object::{JSObject, Object};
-use super::super::reference::{JSValue, Reference};
+use super::super::types::object::{JSObject, Object};
+use super::super::types::reference::{JSValue, Reference};
 use super::traits::ModuleLoader;
 use super::utils;
 use std::str;

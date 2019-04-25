@@ -1,15 +1,14 @@
 use super::super::context::{Compile, Context};
 use super::super::error::DukResult;
 use super::super::from_context::FromDuktapeContext;
-use super::super::function::*;
-use super::super::object::*;
-use super::super::reference::Reference;
 use super::super::to_context::ToDuktapeContext;
+use super::super::types::function::*;
+use super::super::types::object::*;
+use super::super::types::reference::Reference;
 use super::require::Require;
 use super::traits::*;
 use std::path::Path;
 use std::str;
-
 
 pub(crate) static REQUIRE_JS: &'static str = include_str!("./require.js");
 

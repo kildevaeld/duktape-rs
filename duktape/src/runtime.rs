@@ -1,8 +1,8 @@
 use super::callable::*;
 use super::context::*;
 use super::error::*;
-use super::object::*;
-use super::reference::*;
+use super::types::object::*;
+use super::types::reference::*;
 
 static RUNTIME_JS: &'static [u8] = include_bytes!("../userland/dist/runtime.js");
 static POLYFILL_JS: &'static [u8] = include_bytes!("../userland/dist/polyfill.js");

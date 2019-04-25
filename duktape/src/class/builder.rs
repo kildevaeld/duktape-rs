@@ -2,11 +2,11 @@ use super::super::callable::*;
 use super::super::context::{CallRet, Context, Idx, DUK_VARARGS};
 use super::super::error::*;
 use super::super::from_context::*;
-use super::super::function::*;
-use super::super::object::*;
 use super::super::property::*;
-use super::super::reference::{JSValue, Reference};
 use super::super::to_context::*;
+use super::super::types::function::*;
+use super::super::types::object::*;
+use super::super::types::reference::{JSValue, Reference};
 
 pub type Instance<'a> = Object<'a>;
 

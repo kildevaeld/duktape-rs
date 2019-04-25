@@ -1,6 +1,6 @@
 use super::super::context::Context;
 use super::super::error::*;
-use super::super::function::Function;
+use super::super::types::function::Function;
 use super::builder::*;
 
 pub trait ContextClassBuilder {

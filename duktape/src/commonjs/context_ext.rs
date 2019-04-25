@@ -1,7 +1,7 @@
 use super::super::context::Context;
 use super::super::error::DukResult;
 use super::super::from_context::*;
-use super::super::object::Object;
+use super::super::types::object::Object;
 use super::require::CommonJS;
 use super::utils;
 use std::env;
