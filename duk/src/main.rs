@@ -47,7 +47,7 @@ fn main() -> DukResult<()> {
                 println!("{}", out);
                 Ok(())
             } else {
-                ctx.eval_main_script("", script).map(|_| ())
+                ctx.eval_main_script("main.js", script).map(|_| ())
             }
         } else {
             if compile {
