@@ -6,8 +6,7 @@ edition = "2018"
 build = "build.rs"
 
 [dependencies]
-duktape = { path = "../duktape" }
-duktape_modules = { path = "../duktape_modules" }
+duktape = { path = "../duktape", features = ["commonjs"] }
 
 [features]
 default = []

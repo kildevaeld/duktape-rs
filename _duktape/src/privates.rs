@@ -13,7 +13,7 @@ unsafe extern "C" fn data_dtor(ctx: *mut duk_context) -> duk::duk_ret_t {
     return 0;
 }
 
-pub unsafe fn init_global_data(ctx: *mut duk_context) {
+pub unsafe fn init_data(ctx: *mut duk_context) {
     duk::duk_push_global_stash(ctx);
     if duk::duk_has_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, 4) == 1 {
         duk::duk_pop(ctx);
@@ -30,7 +30,7 @@ pub unsafe fn init_global_data(ctx: *mut duk_context) {
     duk::duk_pop(ctx);
 }
 
-pub unsafe fn get_global_data(ctx: *mut duk_context) -> *mut TypeMap {
+pub unsafe fn get_data(ctx: *mut duk_context) -> *mut TypeMap {
     duk::duk_push_global_stash(ctx);
     if duk::duk_has_prop_lstring(ctx, -1, DATA_KEY.as_ptr() as *const i8, 4) != 1 {
         duk::duk_pop(ctx);
@@ -42,35 +42,6 @@ pub unsafe fn get_global_data(ctx: *mut duk_context) -> *mut TypeMap {
     let ptr = duk::duk_get_pointer(ctx, -1) as *mut TypeMap;
 
     duk::duk_pop_n(ctx, 3);
-    ptr
-}
-
-pub unsafe fn init_data(ctx: *mut duk_context, idx: i32) {
-    if duk::duk_has_prop_lstring(ctx, idx, DATA_KEY.as_ptr() as *const i8, 4) == 1 {
-        return;
-    }
-
-    let norm = duk::duk_normalize_index(ctx, idx);
-
-    duk::duk_push_bare_object(ctx);
-    let b = Box::new(TypeMap::new());
-    duk::duk_push_pointer(ctx, Box::into_raw(b) as *mut c_void);
-    duk::duk_put_prop_lstring(ctx, -2, "ptr".as_ptr() as *const i8, 3);
-    duk::duk_push_c_function(ctx, Some(data_dtor), 1);
-    duk::duk_set_finalizer(ctx, -2);
-    duk::duk_put_prop_lstring(ctx, norm, DATA_KEY.as_ptr() as *const i8, 4);
-}
-
-pub unsafe fn get_data(ctx: *mut duk_context, idx: i32) -> *mut TypeMap {
-    if duk::duk_has_prop_lstring(ctx, idx, DATA_KEY.as_ptr() as *const i8, 4) != 1 {
-        return std::ptr::null_mut();
-    }
-
-    duk::duk_get_prop_lstring(ctx, idx, DATA_KEY.as_ptr() as *const i8, 4);
-    duk::duk_get_prop_lstring(ctx, -1, "ptr".as_ptr() as *const i8, 3);
-    let ptr = duk::duk_get_pointer(ctx, -1) as *mut TypeMap;
-
-    duk::duk_pop_n(ctx, 2);
     ptr
 }
 

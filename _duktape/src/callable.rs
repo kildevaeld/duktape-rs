@@ -1,6 +1,6 @@
-use super::context::{CallRet, Context, DUK_VARARGS};
-use super::error::DukResult;
-use super::to_context::*;
+use super::context::Context;
+use super::error::Result;
+use super::types::ToDuktape;
 use duktape_sys::*;
 use std::ffi::{c_void, CString};
 
@@ -10,11 +10,11 @@ static KEY: &'static [u8] = b"\xFFptr";
 pub trait Callable {
     /// Specify how many arguments the function accepts
     fn argc(&self) -> i32 {
-        DUK_VARARGS
+        0
     }
 
     /// Call the fn with the context which the callable was registered
-    fn call(&self, ctx: &Context) -> DukResult<CallRet>;
+    fn call(&self, ctx: &Context) -> Result<i32>;
 }
 
 unsafe extern "C" fn call(ctx: *mut duk_context) -> duk_ret_t {
@@ -24,9 +24,7 @@ unsafe extern "C" fn call(ctx: *mut duk_context) -> duk_ret_t {
 
     let ptr = duk_get_pointer(ctx, -1) as *mut Box<dyn Callable>;
     let pp = Box::from_raw(ptr);
-
     duk_pop_2(ctx);
-
     let ret = match pp.call(&mut c) {
         Err(e) => {
             duk_error_raw(
@@ -34,7 +32,7 @@ unsafe extern "C" fn call(ctx: *mut duk_context) -> duk_ret_t {
                 DUK_ERR_ERROR as i32,
                 "".as_ptr() as *const i8,
                 0,
-                CString::new(format!("{}", e)).unwrap().as_ptr(),
+                CString::new(format!("{}", e.0)).unwrap().as_ptr(),
             );
             -1
         }
@@ -66,67 +64,42 @@ pub(crate) unsafe fn push_callable(context: &Context, callable: Box<dyn Callable
     duk_set_finalizer(context.inner, -2);
 }
 
-impl<T: Fn(&Context) -> DukResult<CallRet>> Callable for (i32, T) {
+impl<T: Fn(&Context) -> Result<i32>> Callable for (i32, T) {
     fn argc(&self) -> i32 {
         self.0
     }
 
-    fn call(&self, ctx: &Context) -> DukResult<CallRet> {
+    fn call(&self, ctx: &Context) -> Result<i32> {
         self.1(ctx)
     }
 }
 
-impl<T: Fn(&Context) -> DukResult<CallRet>> Callable for T {
+impl<T: Fn(&Context) -> Result<i32>> Callable for T {
     fn argc(&self) -> i32 {
         0
     }
 
-    fn call(&self, ctx: &Context) -> DukResult<CallRet> {
+    fn call(&self, ctx: &Context) -> Result<i32> {
         self(ctx)
     }
 }
 
-impl Callable for Box<dyn Callable> {
-    fn argc(&self) -> i32 {
-        self.as_ref().argc()
-    }
+// impl<T: Callable> ToDuktape for T {
 
-    fn call(&self, ctx: &Context) -> DukResult<CallRet> {
-        self.as_ref().call(ctx)
-    }
-}
-
-// impl<T: Callable> ToDuktape for T {}
-
-// impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for T {
-//     fn to_context(self, ctx: &Context) -> DukResult<()> {
-//         let boxed: Box<dyn Callable> = Box::new(self);
-//         unsafe { push_callable(ctx, boxed) };
-//         Ok(())
-//     }
 // }
 
-// impl<T: 'static + Fn(&Context) -> DukResult<CallRet>> ToDuktape for (i32, T) {
-//     fn to_context(self, ctx: &Context) -> DukResult<()> {
-//         let boxed: Box<dyn Callable> = Box::new(self);
-//         unsafe { push_callable(ctx, boxed) };
-//         Ok(())
-//     }
-// }
-
-struct JSFunc {
-    inner: Box<dyn Callable>,
-}
-
-impl ToDuktape for JSFunc {
-    fn to_context(self, ctx: &Context) -> DukResult<()> {
-        unsafe { push_callable(ctx, self.inner) };
+impl<T: 'static + Fn(&Context) -> Result<i32>> ToDuktape for T {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        let boxed: Box<dyn Callable> = Box::new(self);
+        unsafe { push_callable(ctx, boxed) };
         Ok(())
     }
 }
 
-pub fn jsfunc<F: Callable + 'static>(call: F) -> impl ToDuktape {
-    JSFunc {
-        inner: Box::new(call),
+impl<T: 'static + Fn(&Context) -> Result<i32>> ToDuktape for (i32, T) {
+    fn to_context(self, ctx: &Context) -> Result<()> {
+        let boxed: Box<dyn Callable> = Box::new(self);
+        unsafe { push_callable(ctx, boxed) };
+        Ok(())
     }
 }

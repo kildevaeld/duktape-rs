@@ -1,10 +1,12 @@
 let test = (test = "me") => `Test ${test}`;
 
-function deco() {}
+function deco() { }
 
 
 class Test {
+    constructor() { }
 
+    helloBetsy() { }
 }
 
 new Test

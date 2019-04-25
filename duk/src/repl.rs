@@ -1,20 +1,18 @@
 use colored::*;
 use duktape::prelude::*;
-use duktape_modules::error::Result;
-use duktape_modules::CJSContext;
 use rustyline::error::ReadlineError;
 use rustyline::{ColorMode, CompletionType, Config, EditMode, Editor};
 use std::env;
 
 fn print_help() {}
 
-pub fn run(ctx: &Context, es6: bool) -> Result<()> {
+pub fn run(ctx: &Context, es6: bool) -> DukResult<()> {
     let require: Object = ctx.get_global_string("require").getp()?;
 
     require.set(
         b"\xFFmoduleId",
         format!("{}/___repl.js", env::current_dir()?.to_str().unwrap()),
-    );
+    )?;
 
     let config = Config::builder()
         .edit_mode(EditMode::Vi)
@@ -56,11 +54,12 @@ pub fn run(ctx: &Context, es6: bool) -> Result<()> {
                     _ => {}
                 }
 
-                rl.add_history_entry(line.as_ref());
+                rl.add_history_entry(line.as_str());
 
                 let source = if es6 {
                     ctx.require("es2015")?
-                        .call::<_, _, Object>("transform", line.as_str())?
+                        .prop("transform")
+                        .call::<_, Object>(line.as_str())?
                         .get::<_, &str>("code")?
                 } else {
                     line.as_str()
@@ -69,7 +68,7 @@ pub fn run(ctx: &Context, es6: bool) -> Result<()> {
                 match ctx.eval(source.replace("\'use strict\';", "").trim()) {
                     Err(e) => println!("  {:?}", e),
                     Ok(_) => {
-                        let re = ctx.getp::<Ref>()?;
+                        let re = ctx.getp::<Reference>()?;
                         let s = match re.get_type() {
                             Type::Boolean | Type::Number => format!("{}", re.to_string().yellow()),
                             Type::Null => format!("{}", re.to_string().white()),
