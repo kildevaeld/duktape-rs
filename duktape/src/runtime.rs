@@ -74,6 +74,18 @@ fn create_process(ctx: &Context) -> DukResult<()> {
 
     process.set("stderr", stderr)?;
 
+    let platform = if cfg!(target_os = "macos") {
+        "macos"
+    } else if cfg!(target_os = "linux") {
+        "linux"
+    } else if cfg!(target_os = "windows") {
+        "windows"
+    } else {
+        "unknown"
+    };
+
+    process.set("platform", platform)?;
+
     ctx.push_global_object();
     process.push();
     ctx.put_prop_string(-2, "process");
