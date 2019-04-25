@@ -209,7 +209,7 @@ impl RequireBuilder {
         ctx.push_global_object()
             .push(utils::build_require(ctx, "")?)?
             .put_prop_string(-2, "require")
-            .pop(1);
+            .pop(2);
 
         Ok(true)
     }

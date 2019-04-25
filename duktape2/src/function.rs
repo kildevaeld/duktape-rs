@@ -1,8 +1,8 @@
 use super::argument_list::ArgumentList;
 use super::context::{Context, Idx};
 use super::error::DukResult;
-use super::object::JSObject;
-use super::prelude::{FromDuktape, ToDuktape};
+use super::object::{JSObject, Object};
+use super::prelude::{FromDuktape, FromDuktapeContext, ToDuktape, ToDuktapeContext};
 use super::reference::{JSValue, Reference};
 use duktape_sys as duk;
 use std::fmt;
@@ -13,6 +13,21 @@ pub trait JSFunction<'a>: JSObject<'a> {
         let len = args.len();
         args.push_args(self.ctx())?;
         self.ctx().call(len)?;
+        let ret = T::from_context(self.ctx(), -1)?;
+        self.ctx().pop(1);
+        Ok(ret)
+    }
+
+    fn call_ctx<Args: ArgumentList, Ctx: ToDuktape, T: FromDuktape<'a>>(
+        &self,
+        this: Ctx,
+        args: Args,
+    ) -> DukResult<T> {
+        self.push();
+        this.to_context(self.ctx())?;
+        let len = args.len();
+        args.push_args(self.ctx())?;
+        self.ctx().call_method(len)?;
         let ret = T::from_context(self.ctx(), -1)?;
         self.ctx().pop(1);
         Ok(ret)
@@ -43,6 +58,50 @@ pub trait JSFunction<'a>: JSObject<'a> {
         self
     }
 
+    fn prototype(&self) -> DukResult<Object<'a>> {
+        if !self.has("prototype") {
+            self.push();
+            unsafe {
+                duk::duk_get_prototype(self.ctx().inner, -1);
+            }
+            self.ctx().remove(-2);
+
+            self.set_prototype(&self.ctx().getp::<Object>()?)?;
+            //return None;
+        }
+        // self.push();
+        // unsafe {
+        //     duk::duk_get_prototype(self.ctx().inner, -1);
+        // }
+        // self.ctx().remove(-2);
+        // println!("ctx2 {:?}", self.ctx());
+        // Some(self.ctx().getp::<Object>().unwrap())
+        self.get("prototype")
+    }
+
+    fn set_prototype(&self, prototype: &Object<'a>) -> DukResult<&Self> {
+        self.set("prototype", prototype)?;
+
+        Ok(self)
+        // self.push();
+        // self.ctx().push(prototype)?;
+        // unsafe {
+        //     duk::duk_set_prototype(self.ctx().inner, -2);
+        // }
+        // self.ctx().pop(1);
+        // // self.ctx().push_string("prototype").push(prototype)?;
+
+        // // unsafe {
+        // //     duk::duk_def_prop(
+        // //         self.ctx().inner,
+        // //         -3,
+        // //         duk::DUK_DEFPROP_HAVE_VALUE | duk::DUK_DEFPROP_FORCE,
+        // //     );
+        // // }
+        // // self.ctx().pop(1);
+        // Ok(self)
+    }
+
     fn name(&self) -> &'a str {
         self.get("name").unwrap_or("")
     }
@@ -59,13 +118,13 @@ impl<'a> Function<'a> {
     }
 }
 
-
 impl<'a> fmt::Debug for Function<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Function").field("reference", &self._ref).finish()
+        f.debug_struct("Function")
+            .field("reference", &self._ref)
+            .finish()
     }
 }
-
 
 impl<'a> JSValue<'a> for Function<'a> {
     fn ctx(&self) -> &'a Context {
@@ -87,13 +146,6 @@ impl<'a> ToDuktape for Function<'a> {
         Ok(())
     }
 }
-
-// impl<'a> ToDuktape for &'a Function<'a> {
-//     fn to_context(self, _ctx: &Context) -> DukResult<()> {
-//         self.push();
-//         Ok(())
-//     }
-// }
 
 impl<'a> FromDuktape<'a> for Function<'a> {
     fn from_context(ctx: &'a Context, index: Idx) -> DukResult<Self> {

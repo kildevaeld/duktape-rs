@@ -105,6 +105,12 @@ impl<'a> ToDuktape for &'a str {
 //     }
 // }
 
+impl<T: ToDuktape + Clone> ToDuktape for Box<T> {
+    fn to_context(self, ctx: &Context) -> DukResult<()> {
+        self.as_ref().clone().to_context(ctx)
+    }
+}
+
 impl<'a, T: ToDuktape> ToDuktape for Vec<T> {
     fn to_context(self, ctx: &Context) -> DukResult<()> {
         ctx.push_array();

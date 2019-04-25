@@ -2,7 +2,7 @@
 
 members = [
     "duktape_sys",
-    "duktape",
+    #"duktape",
     "duktape2",
     #"duktape_modules",
     #"duktape_stdlib",

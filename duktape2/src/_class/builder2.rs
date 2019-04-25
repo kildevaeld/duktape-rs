@@ -69,6 +69,14 @@ impl<'a> ClassBuilder<'a> {
     pub fn build(self, ctx: &Context) -> DukResult<()> {
         unsafe { push_class_builder(ctx, self) }
     }
+
+    pub fn push_to_global(self, ctx: &Context) -> DukResult<()> {
+        let name = self.name.clone();
+        ctx.push_global_object();
+        duk_ok_or_pop!(self.build(ctx), ctx, 1);
+        ctx.put_prop_string(-2, name);
+        Ok(())
+    }
 }
 
 unsafe extern "C" fn class_ctor(ctx: *mut duk::duk_context) -> duk::duk_ret_t {

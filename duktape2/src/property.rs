@@ -7,15 +7,15 @@ use super::object::Object;
 use super::reference::{JSValue, Reference};
 use super::to_context::ToDuktape;
 
-#[derive(Default)]
-pub struct PropertyBuilder {
+pub struct PropertyBuilder<'a, V: ToDuktape> {
     flags: PropertyFlag,
     setter: Option<Box<dyn Callable>>,
     getter: Option<Box<dyn Callable>>,
-    value: Option<Box<dyn ToDuktape>>,
+    value: Option<V>,
+    name: &'a str,
 }
 
-impl PropertyBuilder {
+impl<'a, V: ToDuktape> PropertyBuilder<'a, V> {
     pub fn configurable(mut self, on: bool) -> Self {
         if on {
             self.flags |= PropertyFlag::DUK_DEFPROP_SET_CONFIGURABLE;
@@ -57,12 +57,18 @@ impl PropertyBuilder {
         self
     }
 
-    pub fn value<V: ToDuktape + 'static>(mut self, value: V) -> Self {
+    pub fn value<Val: ToDuktape + 'static>(mut self, value: Val) -> PropertyBuilder<'a, Val> {
         self.clear_getter();
         self.clear_setter();
         self.flags |= PropertyFlag::DUK_DEFPROP_HAVE_VALUE;
-        self.value = Some(Box::new(value));
-        self
+        // self.value = val;
+        PropertyBuilder {
+            flags: self.flags,
+            setter: None,
+            getter: None,
+            value: Some(value),
+            name: self.name,
+        }
     }
 
     pub fn clear_getter(&mut self) {
@@ -80,6 +86,7 @@ impl PropertyBuilder {
     }
 
     pub(crate) fn build(self, ctx: &Context, idx: Idx) -> DukResult<()> {
+        ctx.push_string(self.name);
         if let Some(getter) = self.getter {
             ctx.push_function(getter);
         }
@@ -88,9 +95,9 @@ impl PropertyBuilder {
             ctx.push_function(setter);
         }
 
-        // if let Some(value) = self.value {
-        //     value.to_context(ctx);
-        // }
+        if let Some(value) = self.value {
+            value.to_context(ctx)?;
+        }
         ctx.def_prop(idx, self.flags)?;
 
         Ok(())
@@ -103,8 +110,14 @@ pub struct Property<'a> {
 }
 
 impl<'a> Property<'a> {
-    pub fn build() -> PropertyBuilder {
-        PropertyBuilder::default()
+    pub fn build<'b>(name: &'b str) -> PropertyBuilder<'b, ()> {
+        PropertyBuilder {
+            flags: PropertyFlag::default(),
+            setter: None,
+            getter: None,
+            value: None,
+            name: name,
+        }
     }
 
     pub fn call<A: ArgumentList, R: FromDuktape<'a>>(&self, args: A) -> DukResult<R> {

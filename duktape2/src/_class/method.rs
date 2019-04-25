@@ -5,7 +5,7 @@ use duktape_sys::*;
 use std::ffi::{c_void, CString};
 use typemap::TypeMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Instance<'a> {
     inner: Reference<'a>,
 }

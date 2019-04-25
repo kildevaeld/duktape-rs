@@ -24,7 +24,9 @@ unsafe extern "C" fn call(ctx: *mut duk_context) -> duk_ret_t {
 
     let ptr = duk_get_pointer(ctx, -1) as *mut Box<dyn Callable>;
     let pp = Box::from_raw(ptr);
+
     duk_pop_2(ctx);
+
     let ret = match pp.call(&mut c) {
         Err(e) => {
             duk_error_raw(

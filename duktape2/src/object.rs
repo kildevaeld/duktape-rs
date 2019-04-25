@@ -9,8 +9,8 @@ use super::property::{Property, PropertyBuilder};
 use super::reference::{JSValue, Reference};
 use super::to_context::*;
 use std::fmt;
-use typemap::TypeMap;
 use std::iter;
+use typemap::TypeMap;
 
 pub trait JSObject<'a>: JSValue<'a> {
     fn get<T: AsRef<[u8]>, V: FromDuktape<'a>>(&self, prop: T) -> DukResult<V> {
@@ -37,7 +37,7 @@ pub trait JSObject<'a>: JSValue<'a> {
     }
 
     /// Delete property
-    fn del<T: AsRef<[u8]>>(&mut self, prop: T) -> &mut Self {
+    fn del<T: AsRef<[u8]>>(&self, prop: T) -> &Self {
         self.push();
         self.ctx().del_prop_string(-1, prop.as_ref());
         self.ctx().pop(1);
@@ -69,9 +69,10 @@ pub trait JSObject<'a>: JSValue<'a> {
         ObjectIterator::new(self, self.keys())
     }
 
-    fn define_property(&self, definition: PropertyBuilder) -> DukResult<()> {
+    fn define_property<V: ToDuktape>(&self, definition: PropertyBuilder<V>) -> DukResult<()> {
         self.push();
-        duk_ok_or_pop!(definition.build(self.ctx(), -1), self.ctx(), 1);
+        let idx = self.ctx().normalize_index(-1);
+        duk_ok_or_pop!(definition.build(self.ctx(), idx), self.ctx(), 1);
         self.ctx().pop(1);
         Ok(())
     }
@@ -90,6 +91,20 @@ pub trait JSObject<'a>: JSValue<'a> {
             let data = get_data(self.ctx().inner, -1);
             &mut *data
         }
+    }
+
+    fn extend(&self, other: &Object) -> DukResult<&Self> {
+        for kv in other.iter() {
+            self.set(kv.0, kv.1)?;
+        }
+        Ok(self)
+    }
+
+    fn extend_all(&self, other: Vec<&Object>) -> DukResult<&Self> {
+        for o in other.iter() {
+            self.extend(o)?;
+        }
+        Ok(self)
     }
 }
 
@@ -120,7 +135,9 @@ impl<'a> fmt::Display for Object<'a> {
 
 impl<'a> fmt::Debug for Object<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("Object").field("reference", &self._ref).finish()
+        f.debug_struct("Object")
+            .field("reference", &self._ref)
+            .finish()
     }
 }
 
@@ -205,7 +222,6 @@ impl<'a> From<Object<'a>> for DukResult<Array<'a>> {
         duk_type_error!("could not interpret object as array")
     }
 }
-
 
 pub struct ObjectIterator<'a, O: JSObject<'a>> {
     object: &'a O,

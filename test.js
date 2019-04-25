@@ -1,12 +1,13 @@
-// var fs = require('fs');
 
-// var file = new fs.File('duk_history.txt');
+// process.stdout.write("Hello, World\n");
+// process.stdout.write(JSON.stringify(require('./test.json')) + "\n");
 
-// var buffer = file.readAll();
+var test = new Test();
 
-// require('io').stdout.write(new TextDecoder('utf8').decode(buffer));
-process.stdout.write("Hello, World\n");
-process.stdout.write(JSON.stringify(require('./test.json')) + "\n");
+process.stdout.write((test instanceof Test).toString());
+process.stdout.write((test instanceof Parent).toString());
+
+
 module.exports = {
     test: 'Hello, World',
     json: require('./tests/cheese'),

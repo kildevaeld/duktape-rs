@@ -85,9 +85,7 @@ bitflags! {
 
 impl Default for PropertyFlag {
     fn default() -> PropertyFlag {
-        PropertyFlag::DUK_DEFPROP_SET_CONFIGURABLE
-            | PropertyFlag::DUK_DEFPROP_SET_ENUMERABLE
-            | PropertyFlag::DUK_DEFPROP_SET_CONFIGURABLE
+        PropertyFlag::DUK_DEFPROP_SET_ENUMERABLE | PropertyFlag::DUK_DEFPROP_SET_CONFIGURABLE
     }
 }
 
@@ -99,7 +97,6 @@ pub struct Context {
 
 unsafe impl Send for Context {}
 unsafe impl Sync for Context {}
-
 
 macro_rules! handle_error {
     ($ret: expr, $ctx: expr) => {
@@ -747,8 +744,6 @@ impl Drop for Context {
                 duk::duk_destroy_heap(self.inner);
             };
         }
-
-        //self.data = ptr::null_mut();
         self.inner = ptr::null_mut();
     }
 }
