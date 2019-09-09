@@ -71,7 +71,7 @@ mod bindings {
         .args(&["tools/configure.py", "--output-directory", output_dir.to_str().unwrap(), 
             "-DDUK_USE_SYMBOL_BUILTIN",
             "-UDUK_USE_FILE_IO",
-            "--dll",
+            //"--dll",
             "-DDUK_USE_FASTINT"
             ])
         .current_dir("duktape-2.3.0")

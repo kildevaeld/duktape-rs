@@ -4,3 +4,4 @@ target/
 duk_history.txt
 node_modules/
 *.pyc
+.vscode/

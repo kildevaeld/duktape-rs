@@ -9,3 +9,6 @@ members = [
     "duktape_es2015",
     "duk"
 ]
+
+[profile.release]
+lto = true
